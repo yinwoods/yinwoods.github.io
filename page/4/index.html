@@ -25,7 +25,11 @@
 匹配后删除这两个元素，再从头指针开始找中间位置，重复这个操作直到链表为空
 ps:需要对空表以及只含一个元素的链表进行特殊处理
 这样的思路虽然是正确的，但是太慢了，代码如下：
-123456789101112...</p></div><div class="post-footer"><div class="meta"><div class="info"><i class="fa fa-sun-o"></i><span class="date">2015-07-25</span><i class="fa fa-comment-o"></i><a href="/2015/07/25/leetcode-234-palindrome-linked-list单链表快慢指针/#comments">评论</a><i class="fa fa-tag"></i><a href="/categories/coding/" title="coding" class="tag">coding </a><a href="/tags/algorithm/" title="algorithm" class="tag">algorithm </a></div></div></div></div><div class="post animated fadeInDown"><div class="post-title"><h3><a href="/2015/07/25/leetcode-2-add-two-numbers-单链表相加/">LeetCode 2 Add Two Numbers （单链表相加）</a></h3></div><div class="post-content"><p>题目是给两个链表，对两个链表进行相加操作
+123456789101112...</p></div><div class="post-footer"><div class="meta"><div class="info"><i class="fa fa-sun-o"></i><span class="date">2015-07-25</span><i class="fa fa-comment-o"></i><a href="/2015/07/25/leetcode-234-palindrome-linked-list单链表快慢指针/#comments">评论</a><i class="fa fa-tag"></i><a href="/categories/coding/" title="coding" class="tag">coding </a><a href="/tags/algorithm/" title="algorithm" class="tag">algorithm </a></div></div></div></div><div class="post animated fadeInDown"><div class="post-title"><h3><a href="/2015/07/25/leetcode-1-two-sum哈希/">LeetCode 1 Two Sum（哈希）</a></h3></div><div class="post-content"><p>题意是给出一串数字以及一个target（保证有一解）
+找出满足两数之和等于target的两个数的下标（下标从1开始）
+一个简单的想法就是直接暴力，时间复杂度O（n*n），超时
+然后可以想到对这串数字排序，排序后从两边向中间找
+但是有一个很棘手的问题就是这串数字中一对相同的数是答案，比如[0，3，4，0];targ...</p></div><div class="post-footer"><div class="meta"><div class="info"><i class="fa fa-sun-o"></i><span class="date">2015-07-25</span><i class="fa fa-comment-o"></i><a href="/2015/07/25/leetcode-1-two-sum哈希/#comments">评论</a><i class="fa fa-tag"></i><a href="/categories/coding/" title="coding" class="tag">coding </a><a href="/tags/algorithm/" title="algorithm" class="tag">algorithm </a></div></div></div></div><div class="post animated fadeInDown"><div class="post-title"><h3><a href="/2015/07/25/leetcode-2-add-two-numbers-单链表相加/">LeetCode 2 Add Two Numbers （单链表相加）</a></h3></div><div class="post-content"><p>题目是给两个链表，对两个链表进行相加操作
 相加结果仅取个位，若大于10，向下一位进1
 这题要考虑的情况主要有以下几种：
 
@@ -34,11 +38,7 @@ ps:需要对空表以及只含一个元素的链表进行特殊处理
 3、两个链表长度不同，处理完相同部分，对较长的链表单独处理
 4、存在连续进位
 
-其实题目比较简单，但自己在指针操作方面确实不熟练，...</p></div><div class="post-footer"><div class="meta"><div class="info"><i class="fa fa-sun-o"></i><span class="date">2015-07-25</span><i class="fa fa-comment-o"></i><a href="/2015/07/25/leetcode-2-add-two-numbers-单链表相加/#comments">评论</a><i class="fa fa-tag"></i><a href="/categories/coding/" title="coding" class="tag">coding </a><a href="/tags/algorithm/" title="algorithm" class="tag">algorithm </a></div></div></div></div><div class="post animated fadeInDown"><div class="post-title"><h3><a href="/2015/07/25/leetcode-1-two-sum哈希/">LeetCode 1 Two Sum（哈希）</a></h3></div><div class="post-content"><p>题意是给出一串数字以及一个target（保证有一解）
-找出满足两数之和等于target的两个数的下标（下标从1开始）
-一个简单的想法就是直接暴力，时间复杂度O（n*n），超时
-然后可以想到对这串数字排序，排序后从两边向中间找
-但是有一个很棘手的问题就是这串数字中一对相同的数是答案，比如[0，3，4，0];targ...</p></div><div class="post-footer"><div class="meta"><div class="info"><i class="fa fa-sun-o"></i><span class="date">2015-07-25</span><i class="fa fa-comment-o"></i><a href="/2015/07/25/leetcode-1-two-sum哈希/#comments">评论</a><i class="fa fa-tag"></i><a href="/categories/coding/" title="coding" class="tag">coding </a><a href="/tags/algorithm/" title="algorithm" class="tag">algorithm </a></div></div></div></div><div class="post animated fadeInDown"><div class="post-title"><h3><a href="/2015/07/24/leetcode-238-product-of-array-except-self数学/">LeetCode 238（数学）</a></h3></div><div class="post-content"><p>题目的意思是给定一个数组，让你输出另一个数组，这个数组中每个元素的值为给定数组中除该位置外剩余所有元素的乘积。
+其实题目比较简单，但自己在指针操作方面确实不熟练，...</p></div><div class="post-footer"><div class="meta"><div class="info"><i class="fa fa-sun-o"></i><span class="date">2015-07-25</span><i class="fa fa-comment-o"></i><a href="/2015/07/25/leetcode-2-add-two-numbers-单链表相加/#comments">评论</a><i class="fa fa-tag"></i><a href="/categories/coding/" title="coding" class="tag">coding </a><a href="/tags/algorithm/" title="algorithm" class="tag">algorithm </a></div></div></div></div><div class="post animated fadeInDown"><div class="post-title"><h3><a href="/2015/07/24/leetcode-238-product-of-array-except-self数学/">LeetCode 238（数学）</a></h3></div><div class="post-content"><p>题目的意思是给定一个数组，让你输出另一个数组，这个数组中每个元素的值为给定数组中除该位置外剩余所有元素的乘积。
 例如输入[1,2,3,4]，输出[24,12,8,6]
 要求：不能使用除法，且时间复杂度在O（n）内
 其实题目中说明了不能使用除法就比较容易想到把一个数左右两侧的所有数乘起来
