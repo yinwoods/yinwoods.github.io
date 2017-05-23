@@ -1,0 +1,242 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><meta name="author" content="yinwoods,yinwoods#163.com"><title>含随机指针的单链表/二叉树的深度拷贝 · yinwoods</title><meta name="description" content="一、包含随机指针的单链表的深度拷贝最近遇到一道很有趣的题目：给定每个节点都包含随机指针的单链表，问如何深度拷贝这个单链表？
+类似的单链表如图所示：
+
+总结了下看到的答案，大致可分为三种方法：
+1、暴力复制（很朴素的方法）因为随机指针可能指向当前节点之后的节点，所以考虑分两步来做。
+第一步遍历单链表，"><meta name="keywords" content="Hexo,Linux,Python"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="renderer" content="webkit"><link rel="short icon" href="/images/favicon.png" type="image/x-icon"><link rel="stylesheet" href="/css/style.css"><link rel="stylesheet" href="/css/blog_basic.css"><link rel="stylesheet" href="/css/font-awesome.min.css"><link rel="alternate" type="application/atom+xml" title="ATOM 1.0" href="/atom.xml"></head><body><div class="sidebar animated fadeInDown"><div class="logo-title"><div class="title"><img src="/images/logo@2x.png" style="width:127px;"><h3 title=""><a href="/">yinwoods</a></h3><div class="description"><p>To Be A Better Man!😈</p></div></div></div><ul class="social-links"><li><a href="http://github.com/https://github.com/yinwoods"><i class="fa fa-github"></i></a></li></ul><div class="footer"><a target="_blank" href="/"><span>Theme by </span></a><a href="https://www.caicai.me"> CaiCai </a><span>&</span><a href="https://github.com/Ben02/hexo-theme-Anatole"> Ben</a><div class="by_farbox"><a href="https://hexo.io/zh-cn/" target="_blank">Proudly published with Hexo&#65281;</a></div></div></div><div class="main"><div class="page-top animated fadeInDown"><div class="nav"><li><a href="/">首页</a></li><li><a href="/about">关于</a></li><li><a href="/archives">归档</a></li><li><a href="/links">友链</a></li></div><div class="information"><div class="back_btn"><li><a onclick="window.history.go(-1)" class="fa fa-chevron-left"> </a></li></div><div class="avatar"><img src="/images/favicon.png"></div></div></div><div class="autopagerize_page_element"><div class="content"><div class="post-page"><div class="post animated fadeInDown"><div class="post-title"><h3><a>含随机指针的单链表/二叉树的深度拷贝</a></h3></div><div class="post-content"><h3 id="一、包含随机指针的单链表的深度拷贝"><a href="#一、包含随机指针的单链表的深度拷贝" class="headerlink" title="一、包含随机指针的单链表的深度拷贝"></a>一、包含随机指针的单链表的深度拷贝</h3><p>最近遇到一道很有趣的题目：<code>给定每个节点都包含随机指针的单链表，问如何深度拷贝这个单链表？</code></p>
+<p>类似的单链表如图所示：</p>
+<p><img src="http://7xlnl2.com1.z0.glb.clouddn.com/post57-2.jpg" alt="图1"></p>
+<p>总结了下看到的答案，大致可分为三种方法：</p>
+<h4 id="1、暴力复制（很朴素的方法）"><a href="#1、暴力复制（很朴素的方法）" class="headerlink" title="1、暴力复制（很朴素的方法）"></a>1、暴力复制（很朴素的方法）</h4><p>因为随机指针可能指向当前节点之后的节点，所以考虑分两步来做。</p>
+<p>第一步遍历单链表，拷贝节点及节点的next指针，不考虑节点的random指针。结束后得到一个新的单链表。</p>
+<p>第二步遍历原单链表，如果当前访问节点A有random指针指向节点B，则在新的单链表中找到相应的节点AA以及random所指向节点BB，令AA-&gt;random = BB。</p>
+<p>时间复杂度：O(N2)</p>
+<h4 id="2、通过节点映射关系实现深度拷贝"><a href="#2、通过节点映射关系实现深度拷贝" class="headerlink" title="2、通过节点映射关系实现深度拷贝"></a>2、通过节点映射关系实现深度拷贝</h4><p>考虑第一种方法可以发现时间主要耗费在复制random指针的过程中需要查找相应的节点，因此可想到如果能够建立原单链表与新单链表节点之间的映射关系，那么只需遍历一次即可完成random指针的拷贝。详细步骤如下：</p>
+<p>第一步遍历单链表，拷贝节点及节点的next指针，不考虑节点的random指针。结束后得到一个新的单链表。</p>
+<p>第二步遍历原单链表，如果当前访问节点A有random指针指向节点B，则令map[A]-&gt;random = map[B]即可。</p>
+<p>故只需要两次遍历，时间复杂度为O(2N)</p>
+<p>代码如下：</p>
+<pre><code>#!CPP
+#include &lt;map&gt;
+#include &lt;cstdio&gt;
+#include &lt;iostream&gt;
+using namespace std;
+
+struct Node {
+    int key;
+    Node *next, *random;
+    Node(int k, Node *nt, Node *rand): key(k), next(nt), random(rand) {};
+};
+
+void printInOrder(Node *node) {
+
+    Node* curNode = node;
+    while(curNode != NULL) {
+        cout &lt;&lt; &quot;[ &quot; &lt;&lt; curNode-&gt;key &lt;&lt; &quot;, &quot;;
+
+        if(curNode-&gt;random == NULL) {
+            cout &lt;&lt; &quot;NULL ] -&gt; &quot;;
+        } else {
+            cout &lt;&lt; curNode-&gt;random-&gt;key &lt;&lt; &quot; ] -&gt; &quot;;
+        }
+        curNode = curNode-&gt;next;
+    }
+    cout &lt;&lt; endl;
+}
+
+Node* copyLinkedList(Node* treeNode, map&lt;Node*, Node*&gt; *mymap) {
+
+    if(treeNode == NULL)
+        return NULL;
+
+    Node* headNode = new Node(treeNode-&gt;key, NULL, NULL);
+    Node* curNode = headNode;
+    (*mymap)[treeNode] = headNode;
+
+    treeNode = treeNode-&gt;next;
+
+    while(treeNode != NULL) {
+
+        Node* cloneNode = new Node(treeNode-&gt;key, NULL, NULL);
+        (*mymap)[treeNode] = cloneNode;
+
+        curNode-&gt;next = cloneNode;
+        curNode = curNode-&gt;next;
+        treeNode = treeNode-&gt;next;
+    }
+    return headNode;
+}
+
+void copyRandom(Node* treeNode, Node* cloneNode, map&lt;Node*, Node*&gt; *mymap) {
+
+    Node* headNode = cloneNode;
+
+    while(treeNode != NULL) {
+        cloneNode-&gt;random = (*mymap)[treeNode-&gt;random];
+
+        treeNode = treeNode-&gt;next;
+        cloneNode = cloneNode-&gt;next;
+    }
+
+    cloneNode = headNode;
+    return ;
+}
+
+Node* cloneList(Node* tree) {
+    if(tree == NULL)
+        return NULL;
+
+    map&lt;Node*, Node*&gt; *mymap = new map&lt;Node*, Node*&gt;;
+
+    Node* newList = copyLinkedList(tree, mymap);
+
+    copyRandom(tree, newList, mymap);
+
+    return newList;
+}
+
+int main(void) {
+
+    Node* node1 = new Node(1, NULL, NULL);
+    Node* node2 = new Node(2, NULL, NULL);
+    Node* node3 = new Node(3, NULL, NULL);
+    Node* node4 = new Node(4, NULL, NULL);
+
+    node1-&gt;next = node2;
+    node2-&gt;next = node3;
+    node3-&gt;next = node4;
+
+    node1-&gt;random = node3;
+    node2-&gt;random = node4;
+
+    printInOrder(node1);
+
+    Node* clone = cloneList(node1);
+
+    printInOrder(clone);
+
+    return 0;
+}
+</code></pre><h3 id="3、在原单链表上插入节点并删除实现深度拷贝"><a href="#3、在原单链表上插入节点并删除实现深度拷贝" class="headerlink" title="3、在原单链表上插入节点并删除实现深度拷贝"></a>3、在原单链表上插入节点并删除实现深度拷贝</h3><p>基本思想同2相似，通过减少查找节点的时间来提高效率。在原单链表中每个节点之后插入一个新节点，如下图所示：</p>
+<p><img src="http://7xlnl2.com1.z0.glb.clouddn.com/post57-3.jpg" alt="图2"></p>
+<p>当拷贝random指针时就可以通过以下代码实现。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">A-&gt;next-&gt;random = A-&gt;random-&gt;next</div><div class="line"></div><div class="line"># 恢复原单链表</div><div class="line">A-&gt;next = A-&gt;next-&gt;next</div></pre></td></tr></table></figure>
+<p><strong> 其实这也是一种特殊的节点映射关系 </strong>。故时间复杂度同2为O(2N)</p>
+<p>代码如下：</p>
+<pre><code>#!CPP
+#include &lt;iostream&gt;
+using namespace std;
+
+struct Node {
+    int key;
+    struct Node *next, *random;
+    Node(int k, Node* nt, Node* rand): key(k), next(nt), random(rand) {};
+};
+
+// 打印链表，[a, b] 表示 key 为 a 的节点 random 指针指向 key 为 b 的节点
+void printInorder(Node* node) {
+
+    if(node == NULL)
+        return ;
+
+    cout &lt;&lt; &quot;[ &quot; &lt;&lt; node-&gt;key &lt;&lt; &quot; &quot;;
+
+    if(node-&gt;random == NULL)
+        cout &lt;&lt; &quot;NULL ], &quot;;
+    else cout &lt;&lt; node-&gt;random-&gt;key &lt;&lt; &quot; ], &quot;;
+
+    printInorder(node-&gt;next);
+}
+
+// 复制每个节点（不包含随机指针），并返回第一个复制的节点 
+Node* copyLinkedListNode(Node* treeNode) {
+    Node* curNode = treeNode;
+    while(curNode != NULL) {
+        Node* next = curNode-&gt;next;
+        curNode-&gt;next = new Node(curNode-&gt;key, NULL, NULL);
+        curNode-&gt;next-&gt;next = next;
+        curNode = next;
+    }
+    return treeNode-&gt;next;
+}
+
+// 复制随机指针
+void copyRandomNode(Node* treeNode, Node* cloneNode) {
+    Node *headNode = cloneNode;
+    while(treeNode != NULL) {
+
+        if(treeNode-&gt;random != NULL)
+            cloneNode-&gt;random = treeNode-&gt;random-&gt;next;
+        else cloneNode-&gt;random = NULL;
+
+        if(treeNode-&gt;next == NULL || cloneNode-&gt;next == NULL)
+            return ;
+        else {
+            treeNode = treeNode-&gt;next-&gt;next;
+            cloneNode = cloneNode-&gt;next-&gt;next;
+        }
+    }
+    cloneNode = headNode;
+}
+
+// 恢复原来的单链表，即分离两个单链表
+void restoreLinkedList(Node* treeNode, Node* cloneNode) {
+    while(treeNode != NULL) {
+        if(cloneNode-&gt;next != NULL) {
+            Node* cloneNext = cloneNode-&gt;next-&gt;next;
+            treeNode-&gt;next = treeNode-&gt;next-&gt;next;
+            cloneNode-&gt;next = cloneNext;
+        } else {
+            treeNode-&gt;next = NULL;
+        }
+        treeNode = treeNode-&gt;next;
+        cloneNode = cloneNode-&gt;next;
+    }
+    return ;
+}
+
+// 复制整个单链表
+Node* cloneLinkedList(Node* treeNode) {
+    if(treeNode == NULL)
+        return NULL;
+
+    Node* cloneNode = copyLinkedListNode(treeNode);
+    copyRandomNode(treeNode, cloneNode);
+    restoreLinkedList(treeNode, cloneNode);
+    return cloneNode;
+}
+
+int main() {
+
+    Node* node1 = new Node(1, NULL, NULL);
+    Node* node2 = new Node(2, NULL, NULL);
+    Node* node3 = new Node(3, NULL, NULL);
+    Node* node4 = new Node(4, NULL, NULL);
+
+    node1-&gt;next = node2;
+    node2-&gt;next = node3;
+    node3-&gt;next = node4;
+    node1-&gt;random = node3;
+    node2-&gt;random = node4;
+
+    cout &lt;&lt; &quot;traversal of original binary tree is: &quot; &lt;&lt; endl;
+    printInorder(node1);
+
+    Node *clone = cloneLinkedList(node1);
+
+    cout &lt;&lt; &quot;\n\ntraversal of cloned binary tree is: &quot; &lt;&lt; endl;
+    printInorder(clone);
+
+
+    return 0;
+}
+</code></pre><h3 id="二、包含随机指针的二叉树深度拷贝"><a href="#二、包含随机指针的二叉树深度拷贝" class="headerlink" title="二、包含随机指针的二叉树深度拷贝"></a>二、包含随机指针的二叉树深度拷贝</h3><p>同上，这里也有三种对应的方法。</p>
+<h3 id="1、暴力复制（OTZ）"><a href="#1、暴力复制（OTZ）" class="headerlink" title="1、暴力复制（OTZ）"></a>1、暴力复制（OTZ）</h3><p>就是暴力。。。时间复杂度为O(N2)</p>
+<h3 id="2、通过节点映射关系实现深度拷贝-1"><a href="#2、通过节点映射关系实现深度拷贝-1" class="headerlink" title="2、通过节点映射关系实现深度拷贝"></a>2、通过节点映射关系实现深度拷贝</h3><p>同单链表中节点建立映射关系一样，这里的时间复杂度同样为O(2N)。</p>
+<p>具体代码如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;map&gt;</span></span></div><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;cstdio&gt;</span></span></div><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></div><div class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</div><div class="line"></div><div class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Node</span> &#123;</span></div><div class="line">	<span class="keyword">int</span> key;</div><div class="line">	Node *left, *right, *random;</div><div class="line">	Node(<span class="keyword">int</span> k, Node* l, Node* r, Node* rand) : key(k), left(l), right(r), random(rand) &#123;&#125;;</div><div class="line">&#125;;</div><div class="line"></div><div class="line"><span class="comment">// 按中序遍历递归打印树</span></div><div class="line"><span class="comment">// 其中[a, b]表示节点a的key值与random指针所指节点的key值</span></div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">printInorder</span><span class="params">(Node* node)</span> </span>&#123;</div><div class="line">	<span class="keyword">if</span>(node == <span class="literal">NULL</span>) </div><div class="line">		<span class="keyword">return</span> ;</div><div class="line"></div><div class="line">	printInorder(node-&gt;left);</div><div class="line">	<span class="built_in">cout</span> &lt;&lt; <span class="string">"[ "</span> &lt;&lt; node-&gt;key &lt;&lt; <span class="string">" "</span>;</div><div class="line"></div><div class="line">	<span class="keyword">if</span>(node-&gt;random == <span class="literal">NULL</span>) &#123;</div><div class="line">		<span class="built_in">cout</span> &lt;&lt; <span class="string">"NULL ], "</span>;</div><div class="line">	&#125; <span class="keyword">else</span> &#123;</div><div class="line">		<span class="built_in">cout</span> &lt;&lt; node-&gt;random-&gt;key &lt;&lt; <span class="string">" ], "</span>;</div><div class="line">	&#125;</div><div class="line"></div><div class="line">	printInorder(node-&gt;right);</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="comment">// 拷贝以treeNode为根节点的整棵树并返回拷贝完成后新的根节点</span></div><div class="line"><span class="comment">// 拷贝过程中包含所有节点的左右孩子，但不包含节点的random指针</span></div><div class="line"><span class="function">Node* <span class="title">copyLeftRightNode</span><span class="params">(Node* treeNode, <span class="built_in">map</span>&lt;Node *, Node *&gt; *mymap)</span> </span>&#123;</div><div class="line">	<span class="keyword">if</span>(treeNode == <span class="literal">NULL</span>) &#123;</div><div class="line">		<span class="keyword">return</span> <span class="literal">NULL</span>;</div><div class="line">	&#125;</div><div class="line"></div><div class="line">	Node* cloneNode = <span class="keyword">new</span> Node(treeNode-&gt;key, <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</div><div class="line">	<span class="comment">// 建立当前节点到克隆节点的映射</span></div><div class="line">	(*mymap)[treeNode] = cloneNode;</div><div class="line">	cloneNode-&gt;left = copyLeftRightNode(treeNode-&gt;left, mymap);</div><div class="line">	cloneNode-&gt;right = copyLeftRightNode(treeNode-&gt;right, mymap);</div><div class="line">	<span class="keyword">return</span> cloneNode;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="comment">// 遍历并拷贝random指针</span></div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">copyRandom</span><span class="params">(Node* treeNode, Node* cloneNode, <span class="built_in">map</span>&lt;Node*, Node*&gt; *mymap)</span> </span>&#123;</div><div class="line">	<span class="keyword">if</span>(cloneNode == <span class="literal">NULL</span>)</div><div class="line">		<span class="keyword">return</span> ;</div><div class="line">	cloneNode-&gt;random = (*mymap)[treeNode-&gt;random];</div><div class="line">	copyRandom(treeNode-&gt;left, cloneNode-&gt;left, mymap);</div><div class="line">	copyRandom(treeNode-&gt;right, cloneNode-&gt;right, mymap);</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="comment">// 克隆整棵树的函数主体</span></div><div class="line"><span class="function">Node* <span class="title">cloneTree</span><span class="params">(Node* tree)</span> </span>&#123;</div><div class="line">	<span class="keyword">if</span>(tree == <span class="literal">NULL</span>)</div><div class="line">		<span class="keyword">return</span> <span class="literal">NULL</span>;</div><div class="line"></div><div class="line">	<span class="comment">// 创建节点到节点的映射</span></div><div class="line">	<span class="built_in">map</span>&lt;Node*, Node*&gt; *mymap = <span class="keyword">new</span> <span class="built_in">map</span>&lt;Node*, Node*&gt;;</div><div class="line"></div><div class="line">	<span class="comment">// 第一次遍历只拷贝树中每个节点的左右孩子</span></div><div class="line">	<span class="comment">// 也就是说暂时不拷贝random指针</span></div><div class="line">	Node* newTree = copyLeftRightNode(tree, mymap);</div><div class="line"></div><div class="line">	<span class="comment">// 第二次遍历拷贝random指针</span></div><div class="line">	copyRandom(tree, newTree, mymap);</div><div class="line">	<span class="keyword">return</span> newTree;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</div><div class="line"></div><div class="line">	Node *tree = <span class="keyword">new</span> Node(<span class="number">1</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</div><div class="line">	tree-&gt;left = <span class="keyword">new</span> Node(<span class="number">2</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</div><div class="line">	tree-&gt;right = <span class="keyword">new</span> Node(<span class="number">3</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</div><div class="line">	tree-&gt;left-&gt;left = <span class="keyword">new</span> Node(<span class="number">4</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</div><div class="line">	tree-&gt;left-&gt;right = <span class="keyword">new</span> Node(<span class="number">5</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</div><div class="line">	tree-&gt;random = tree-&gt;left-&gt;right;</div><div class="line">	tree-&gt;left-&gt;right-&gt;random = tree-&gt;right;</div><div class="line"></div><div class="line">	<span class="built_in">cout</span> &lt;&lt; <span class="string">"Inorder traversal of original binary tree is: "</span> &lt;&lt; <span class="built_in">endl</span>; </div><div class="line">	printInorder(tree);</div><div class="line"></div><div class="line">	Node *clone = cloneTree(tree);</div><div class="line"></div><div class="line">	<span class="built_in">cout</span> &lt;&lt; <span class="string">"\n\nInorder traversal of cloned binary tree is: "</span> &lt;&lt; <span class="built_in">endl</span>;</div><div class="line">	printInorder(clone);</div><div class="line"></div><div class="line">    <span class="keyword">return</span> <span class="number">0</span>; </div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="3、在原二叉树上插入新节点后再删除"><a href="#3、在原二叉树上插入新节点后再删除" class="headerlink" title="3、在原二叉树上插入新节点后再删除"></a>3、在原二叉树上插入新节点后再删除</h3><p>思想同单链表操作一样，但这里要注意节点间的相对关系，在创建新节点时要正确建立该节点与父节点原左右孩子的关系。具体如图示：</p>
+<p><img src="http://7xlnl2.com1.z0.glb.clouddn.com/post57-1.jpg" alt="图3"></p>
+<p>具体代码如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div><div class="line">96</div><div class="line">97</div><div class="line">98</div><div class="line">99</div><div class="line">100</div><div class="line">101</div><div class="line">102</div><div class="line">103</div><div class="line">104</div><div class="line">105</div><div class="line">106</div><div class="line">107</div><div class="line">108</div><div class="line">109</div><div class="line">110</div><div class="line">111</div><div class="line">112</div><div class="line">113</div><div class="line">114</div><div class="line">115</div><div class="line">116</div><div class="line">117</div><div class="line">118</div><div class="line">119</div><div class="line">120</div><div class="line">121</div><div class="line">122</div><div class="line">123</div><div class="line">124</div><div class="line">125</div><div class="line">126</div><div class="line">127</div><div class="line">128</div><div class="line">129</div><div class="line">130</div><div class="line">131</div><div class="line">132</div><div class="line">133</div><div class="line">134</div><div class="line">135</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></div><div class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</div><div class="line"></div><div class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Node</span> &#123;</span></div><div class="line">	<span class="keyword">int</span> key;</div><div class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">Node</span> *<span class="title">left</span>, *<span class="title">right</span>, *<span class="title">random</span>;</span></div><div class="line">	Node(<span class="keyword">int</span> k, Node* l, Node* r, Node* rand): key(k), left(l), right(r), random(rand) &#123;&#125;;</div><div class="line">&#125;;</div><div class="line"></div><div class="line"><span class="comment">// 层次遍历</span></div><div class="line"><span class="comment">// [a, b] 表示 key 为 a 的节点 random 指针指向 key 为 b 的节点</span></div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">printInorder</span><span class="params">(Node* node)</span> </span>&#123;</div><div class="line"></div><div class="line">	<span class="keyword">if</span>(node == <span class="literal">NULL</span>)</div><div class="line">		<span class="keyword">return</span> ;</div><div class="line"></div><div class="line">	<span class="built_in">cout</span> &lt;&lt; <span class="string">"[ "</span> &lt;&lt; node-&gt;key &lt;&lt; <span class="string">" "</span>;</div><div class="line"></div><div class="line">	<span class="keyword">if</span>(node-&gt;random == <span class="literal">NULL</span>)</div><div class="line">		<span class="built_in">cout</span> &lt;&lt; <span class="string">"NULL ], "</span>;</div><div class="line">	<span class="keyword">else</span> <span class="built_in">cout</span> &lt;&lt; node-&gt;random-&gt;key &lt;&lt; <span class="string">" ], "</span>;</div><div class="line"></div><div class="line">	printInorder(node-&gt;left);</div><div class="line">	printInorder(node-&gt;right);</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="comment">// 复制每个节点及左右孩子（不包含随机指针），并返回复制后的节点 </span></div><div class="line"><span class="function">Node* <span class="title">copyLeftRightNode</span><span class="params">(Node* treeNode)</span> </span>&#123;</div><div class="line">	<span class="keyword">if</span>(treeNode == <span class="literal">NULL</span>)</div><div class="line">		<span class="keyword">return</span> <span class="literal">NULL</span>;</div><div class="line"></div><div class="line">	<span class="comment">// 在根节点与左孩子之间插入一个新节点</span></div><div class="line">	Node* left = treeNode-&gt;left;</div><div class="line">	treeNode-&gt;left = <span class="keyword">new</span> Node(treeNode-&gt;key, <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</div><div class="line">	treeNode-&gt;left-&gt;left = left;</div><div class="line"></div><div class="line">	<span class="keyword">if</span>(left != <span class="literal">NULL</span>) &#123;</div><div class="line">		left-&gt;left = copyLeftRightNode(left);</div><div class="line">	&#125;</div><div class="line"></div><div class="line">	<span class="comment">// 复制后的左节点右孩子指向其父节点右孩子复制后得到的节点</span></div><div class="line">	treeNode-&gt;left-&gt;right = copyLeftRightNode(treeNode-&gt;right);</div><div class="line">	<span class="keyword">return</span> treeNode-&gt;left;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="comment">// 复制随机指针</span></div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">copyRandomNode</span><span class="params">(Node* treeNode, Node* cloneNode)</span> </span>&#123;</div><div class="line">	<span class="keyword">if</span>(treeNode == <span class="literal">NULL</span>)</div><div class="line">		<span class="keyword">return</span> ;</div><div class="line"></div><div class="line">	<span class="keyword">if</span>(treeNode-&gt;random != <span class="literal">NULL</span>)</div><div class="line">		cloneNode-&gt;random = treeNode-&gt;random-&gt;left;</div><div class="line">	<span class="keyword">else</span></div><div class="line">		cloneNode-&gt;random = <span class="literal">NULL</span>;</div><div class="line"></div><div class="line">	<span class="keyword">if</span>(treeNode-&gt;left != <span class="literal">NULL</span> &amp;&amp; cloneNode-&gt;left != <span class="literal">NULL</span>)</div><div class="line">		copyRandomNode(treeNode-&gt;left-&gt;left, cloneNode-&gt;left-&gt;left);</div><div class="line">	copyRandomNode(treeNode-&gt;right, cloneNode-&gt;right);</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="comment">// 恢复原来的二叉树，也即分离出新复制的二叉树</span></div><div class="line"><span class="comment">// 因为右孩子关系保持正确，因此只需更新左孩子关系</span></div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">restoreTreeLeftNode</span><span class="params">(Node* treeNode, Node* cloneNode)</span> </span>&#123;</div><div class="line">	<span class="keyword">if</span>(treeNode == <span class="literal">NULL</span>)</div><div class="line">		<span class="keyword">return</span> ;</div><div class="line">	<span class="keyword">if</span>(cloneNode-&gt;left != <span class="literal">NULL</span>) &#123;</div><div class="line">		Node* cloneLeft = cloneNode-&gt;left-&gt;left;</div><div class="line">		treeNode-&gt;left = treeNode-&gt;left-&gt;left;</div><div class="line">		cloneNode-&gt;left = cloneLeft;</div><div class="line">	&#125;</div><div class="line">	<span class="keyword">else</span></div><div class="line">		treeNode-&gt;left = <span class="literal">NULL</span>;</div><div class="line"></div><div class="line">	restoreTreeLeftNode(treeNode-&gt;left, cloneNode-&gt;left);</div><div class="line">	restoreTreeLeftNode(treeNode-&gt;right, cloneNode-&gt;right);</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="comment">// 复制整棵二叉树</span></div><div class="line"><span class="function">Node* <span class="title">cloneTree</span><span class="params">(Node* treeNode)</span> </span>&#123;</div><div class="line">	<span class="keyword">if</span>(treeNode == <span class="literal">NULL</span>)</div><div class="line">		<span class="keyword">return</span> <span class="literal">NULL</span>;</div><div class="line"></div><div class="line">	Node* cloneNode = copyLeftRightNode(treeNode);</div><div class="line">	copyRandomNode(treeNode, cloneNode);</div><div class="line">	restoreTreeLeftNode(treeNode, cloneNode);</div><div class="line">	<span class="keyword">return</span> cloneNode;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</div><div class="line"><span class="comment">/*</span></div><div class="line">	Node* tree = new Node(1);</div><div class="line">	tree-&gt;left = new Node(2);</div><div class="line">	tree-&gt;right = new Node(3);</div><div class="line">	tree-&gt;left-&gt;left = new Node(4);</div><div class="line">	tree-&gt;left-&gt;right = new Node(5);</div><div class="line">	tree-&gt;random = tree-&gt;left-&gt;right;</div><div class="line">	tree-&gt;left-&gt;left-&gt;random = tree;</div><div class="line">	tree-&gt;left-&gt;right-&gt;random = tree-&gt;right;</div><div class="line">*/</div><div class="line">	Node *tree = <span class="keyword">new</span> Node(<span class="number">10</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</div><div class="line">    Node *n2 = <span class="keyword">new</span> Node(<span class="number">6</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</div><div class="line">    Node *n3 = <span class="keyword">new</span> Node(<span class="number">12</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</div><div class="line">    Node *n4 = <span class="keyword">new</span> Node(<span class="number">5</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</div><div class="line">    Node *n5 = <span class="keyword">new</span> Node(<span class="number">8</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</div><div class="line">    Node *n6 = <span class="keyword">new</span> Node(<span class="number">11</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</div><div class="line">    Node *n7 = <span class="keyword">new</span> Node(<span class="number">13</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</div><div class="line">    Node *n8 = <span class="keyword">new</span> Node(<span class="number">7</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</div><div class="line">    Node *n9 = <span class="keyword">new</span> Node(<span class="number">9</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</div><div class="line">    tree-&gt;left = n2;</div><div class="line">    tree-&gt;right = n3;</div><div class="line">    tree-&gt;random = n2;</div><div class="line">    n2-&gt;left = n4;</div><div class="line">    n2-&gt;right = n5;</div><div class="line">    n2-&gt;random = n8;</div><div class="line">    n3-&gt;left = n6;</div><div class="line">    n3-&gt;right = n7;</div><div class="line">    n3-&gt;random = n5;</div><div class="line">    n4-&gt;random = n9;</div><div class="line">    n5-&gt;left = n8;</div><div class="line">    n5-&gt;right = n9;</div><div class="line">    n5-&gt;random = tree;</div><div class="line">    n6-&gt;random = n9;</div><div class="line">    n9-&gt;random = n8;</div><div class="line"></div><div class="line">	<span class="built_in">cout</span> &lt;&lt; <span class="string">"traversal of original binary tree is: "</span> &lt;&lt; <span class="built_in">endl</span>;</div><div class="line">	printInorder(tree);</div><div class="line"></div><div class="line">	Node *clone = cloneTree(tree);</div><div class="line"></div><div class="line">	<span class="built_in">cout</span> &lt;&lt; <span class="string">"\n\ntraversal of cloned binary tree is: "</span> &lt;&lt; <span class="built_in">endl</span>;</div><div class="line">	printInorder(clone);</div><div class="line"></div><div class="line"></div><div class="line">	<span class="keyword">return</span> <span class="number">0</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+</div><div class="post-footer"><div class="meta"><div class="info"><i class="fa fa-sun-o"></i><span class="date">2017-05-23</span><i class="fa fa-tag"></i><a href="/categories/coding/" title="coding" class="tag">coding </a><a href="/tags/algorithm/" title="algorithm" class="tag">algorithm </a></div></div></div></div><div class="share"><div class="evernote"><a href="javascript:(function(){EN_CLIP_HOST='http://www.evernote.com';try{var%20x=document.createElement('SCRIPT');x.type='text/javascript';x.src=EN_CLIP_HOST+'/public/bookmarkClipper.js?'+(new%20Date().getTime()/100000);document.getElementsByTagName('head')[0].appendChild(x);}catch(e){location.href=EN_CLIP_HOST+'/clip.action?url='+encodeURIComponent(location.href)+'&amp;title='+encodeURIComponent(document.title);}})();" ref="nofollow" target="_blank" class="fa fa-bookmark"></a></div><div class="weibo"><a href="javascript:void((function(s,d,e){try{}catch(e){}var f='http://service.weibo.com/share/share.php?',u=d.location.href,p=['url=',e(u),'&amp;title=',e(d.title),'&amp;appkey=2924220432'].join('');function a(){if(!window.open([f,p].join(''),'mb',['toolbar=0,status=0,resizable=1,width=620,height=450,left=',(s.width-620)/2,',top=',(s.height-450)/2].join('')))u.href=[f,p].join('');};if(/Firefox/.test(navigator.userAgent)){setTimeout(a,0)}else{a()}})(screen,document,encodeURIComponent));" class="fa fa-weibo"></a></div><div class="twitter"><a href="http://twitter.com/home?status=,http://blog.yinwoods.work/2017/05/23/2016-10-24-含随机指针的单链表二叉树的深度拷贝/,yinwoods,含随机指针的单链表/二叉树的深度拷贝,;" class="fa fa-twitter"></a></div></div><div class="pagination"><ul class="clearfix"><li class="pre pagbuttons"><a role="navigation" href="/2017/05/23/2016-07-21-一点感想/" title="一点感想" class="btn">上一篇</a></li><li class="next pagbuttons"><a role="navigation" href="/2017/05/23/2015-12-23-实习面试总结以及近期规划/" title="实习面试总结以及近期规划" class="btn">下一篇</a></li></ul></div></div></div></div></div><script src="/js/jquery.js"></script><script src="/js/jquery-migrate-1.2.1.min.js"></script><script src="/js/jquery.appear.js"></script></body></html>
