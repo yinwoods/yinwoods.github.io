@@ -1,34 +1,54 @@
-include mixins
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><meta name="author" content="yinwoods,yinwoods#163.com"><title>python练习册之【0000-为图片添加文字】 · yinwoods</title><meta name="description" content="这几天看了些python的基础教程，感觉好多都是重复的内容，而且本着实践是验证真理的唯一标准的想法，就找了一套python练习题来做。
+在开始之前想为大家推荐一些我感觉还不错的python教程，希望对大家有所帮助：
 
-extends partial/layout
-
-block site_title
-    != page.title + " · " + config.title
-
-block description
-    - var desc = page.desc || strip_html(page.content).replace(/^\s*/, '').replace(/\s*$/, '').substring(0, 150);
-    meta(name="description", content=desc)
-
-block content
-  .autopagerize_page_element: .content: .post-page
-    include mixins
-    +make_post(page, true)
-    .share
-      .evernote
-        a.fa.fa-bookmark(href="javascript:(function(){EN_CLIP_HOST='http://www.evernote.com';try{var%20x=document.createElement('SCRIPT');x.type='text/javascript';x.src=EN_CLIP_HOST+'/public/bookmarkClipper.js?'+(new%20Date().getTime()/100000);document.getElementsByTagName('head')[0].appendChild(x);}catch(e){location.href=EN_CLIP_HOST+'/clip.action?url='+encodeURIComponent(location.href)+'&title='+encodeURIComponent(document.title);}})();", ref="nofollow", target="_blank")
-      .weibo
-        a.fa.fa-weibo(href="javascript:void((function(s,d,e){try{}catch(e){}var f='http://service.weibo.com/share/share.php?',u=d.location.href,p=['url=',e(u),'&title=',e(d.title),'&appkey=2924220432'].join('');function a(){if(!window.open([f,p].join(''),'mb',['toolbar=0,status=0,resizable=1,width=620,height=450,left=',(s.width-620)/2,',top=',(s.height-450)/2].join('')))u.href=[f,p].join('');};if(/Firefox/.test(navigator.userAgent)){setTimeout(a,0)}else{a()}})(screen,document,encodeURIComponent));")
-      .twitter
-        a.fa.fa-twitter(href=url_for("http://twitter.com/home?status="+","+config.url+"/"+page.path+","+config.title+","+page.title+",;"))
-    - var prev = page.prev ? page.prev.path : false;
-    - var next = page.next ? page.next.path : false;
-    .pagination
-      ul.clearfix
-        if prev
-          li.pre.pagbuttons
-            a.btn(role="navigation",href=url_for(prev), title=page.prev.title)!= __('prev_post')
-        if next
-          li.next.pagbuttons
-            a.btn(role="navigation",href=url_for(next), title=page.next.title)!= __('next_post')
-    if page.comments
-        include partial/comments
+1、python3.4教程
+2、python2.7教程
+3、慕课网python入门"><meta name="keywords" content="Hexo,Linux,Python"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="renderer" content="webkit"><link rel="short icon" href="/images/favicon.png" type="image/x-icon"><link rel="stylesheet" href="/css/style.css"><link rel="stylesheet" href="/css/blog_basic.css"><link rel="stylesheet" href="/css/font-awesome.min.css"><link rel="alternate" type="application/atom+xml" title="ATOM 1.0" href="/atom.xml"></head><body><div class="sidebar animated fadeInDown"><div class="logo-title"><div class="title"><img src="/images/logo@2x.png" style="width:127px;"><h3 title=""><a href="/">yinwoods</a></h3><div class="description"><p>To Be A Better Man!😈</p></div></div></div><ul class="social-links"><li><a href="http://weibo.com/yinwoods"><i class="fa fa-weibo"></i></a></li><li><a href="http://facebook.com/yinwoods"><i class="fa fa-facebook"></i></a></li><li><a href="http://github.com/yinwoods"><i class="fa fa-github"></i></a></li></ul><div class="footer"><a target="_blank" href="/"><span>Theme by </span></a><a href="https://www.caicai.me"> CaiCai </a><span>&</span><a href="https://github.com/Ben02/hexo-theme-Anatole"> Ben</a><div class="by_farbox"><a href="https://hexo.io/zh-cn/" target="_blank">Proudly published with Hexo&#65281;</a></div></div></div><div class="main"><div class="page-top animated fadeInDown"><div class="nav"><li><a href="/">首页</a></li><li><a href="/archives">归档</a></li><li><a href="/links">友链</a></li><li><a href="/about">关于</a></li></div><div class="information"><div class="back_btn"><li><a onclick="window.history.go(-1)" class="fa fa-chevron-left"> </a></li></div><div class="avatar"><img src="/images/favicon.png"></div></div></div><div class="autopagerize_page_element"><div class="content"><div class="post-page"><div class="post animated fadeInDown"><div class="post-title"><h3><a>python练习册之【0000-为图片添加文字】</a></h3></div><div class="post-content"><p>这几天看了些python的基础教程，感觉好多都是重复的内容，而且本着<code>实践是验证真理的唯一标准</code>的想法，就找了一套python练习题来做。</p>
+<p>在开始之前想为大家推荐一些我感觉还不错的python教程，希望对大家有所帮助：</p>
+<blockquote>
+<p>1、<a href="http://www.pythondoc.com/pythontutorial3/index.html" target="_blank" rel="external">python3.4教程</a></p>
+<p>2、<a href="http://www.pythondoc.com/pythontutorial27/index.html" target="_blank" rel="external">python2.7教程</a></p>
+<p>3、<a href="http://www.imooc.com/view/177" target="_blank" rel="external">慕课网python入门教程</a></p>
+<p>4、<a href="https://www.codecademy.com/en/tracks/python" target="_blank" rel="external">Codecademy python教程</a></p>
+<p>5、<a href="">知乎收藏夹-知乎那些事</a></p>
+<p>6、还有我正在做的<a href="https://github.com/Yixiaohan/show-me-the-code" target="_blank" rel="external">python练习册</a></p>
+</blockquote>
+<p>言归正传，python练习册的第一道题内容如下：</p>
+<blockquote>
+<p>将你的 QQ 头像（或者微博头像）右上角加上红色的数字，类似于微信未读信息数量那种提示效果。 类似于图中效果</p>
+<p><img src="http://7xlnl2.com1.z0.glb.clouddn.com/post29-头像.png" alt="头像"></p>
+</blockquote>
+<p>其实这道题不难，主要是了解PIL(Python Imaging Library)库的使用方法就好了，但问题是这个库官方版只支持python2.+版本，让我这种使用python3.+的感到很头疼。</p>
+<p>所有已经有人解决这个问题了，为python3.+定制了pillow库，其实还是PIL，只是适配了python3.+</p>
+<p>下载地址<a href="https://pypi.python.org/pypi/Pillow/2.9.0" target="_blank" rel="external">轻戳我</a></p>
+<p>也可以使用<code>pip install pillow</code> 或 <code>easy_install pillow</code>来在线安装</p>
+<p>附官方安装教程<a href="http://pillow.readthedocs.org/en/latest/installation.html#windows-installation" target="_blank" rel="external">pillow installation</a></p>
+<p>下载后得到<code>.egg</code>文件，解压后放到python安装目录下的<code>lib</code>文件夹下即可</p>
+<p><strong>写博客的时候惊讶地发现linux下自带PIL、pillow包。。。</strong></p>
+<hr>
+<p>下面开始正式解决这个问题吧！</p>
+<p>可能很多人看到题目要求后会想到直接在图片上添加文字，这种想法是很正确的。</p>
+<p>我在这里用了两种方法来做：</p>
+<blockquote>
+<p>1、直接在图片右上角添加文字</p>
+<p>2、先把文字生成一张图片，再合并两张图片</p>
+</blockquote>
+<p>先上第一份代码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line"><span class="comment">#0000-为图片添加水印</span></div><div class="line"><span class="keyword">from</span> PIL <span class="keyword">import</span> Image, ImageFilter, ImageFont, ImageDraw</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">draw_str</span><span class="params">(img_pos, font_pos, text)</span>:</span><span class="comment">#传入待绘画图片位置，</span></div><div class="line">    <span class="comment">#img_pos 为待绘画图片位置，font_pos为想要使用的字体路劲，text为想要添加的文字</span></div><div class="line">    image = Image.open(img_pos)<span class="comment">#打开图片</span></div><div class="line">    dr = ImageDraw.Draw(image)</div><div class="line">    font = ImageFont.truetype(font_pos, <span class="number">40</span>)<span class="comment">#设置加载字体位置，以及字体大小</span></div><div class="line">    dr.text((image.size[<span class="number">0</span>]<span class="number">-50</span>, <span class="number">0</span>), text, font=font, fill=<span class="string">"#FF0000"</span>)<span class="comment">#设置添加位置、添加内容、以及颜色</span></div><div class="line">    image.save(<span class="string">"复件"</span> + img_pos)<span class="comment">#另存为</span></div><div class="line">    <span class="comment">#image.show()</span></div><div class="line"></div><div class="line">draw_str(<span class="string">"1.png"</span>, <span class="string">"/usr/share/fonts/truetype/ubuntu-font-family/Ubuntu-R.ttf"</span>, <span class="string">"1"</span>)</div></pre></td></tr></table></figure>
+<p>注释地比较详细了，其实就是函数的调用而已。</p>
+<p>再来第二份代码：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line"><span class="comment">#0000-为图片添加水印</span></div><div class="line"><span class="keyword">from</span> PIL <span class="keyword">import</span> Image, ImageFilter, ImageFont, ImageDraw</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">draw_str</span><span class="params">(img_pos, font_pos, text)</span>:</span><span class="comment">#同上</span></div><div class="line">    backimg = Image.open(img_pos)</div><div class="line">    foreimg = Image.new(<span class="string">"RGB"</span>, (<span class="number">35</span>, <span class="number">35</span>), (<span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span>))<span class="comment">#生成一个新图片，设置大小，背景色</span></div><div class="line"></div><div class="line">    dr = ImageDraw.Draw(foreimg)</div><div class="line">    font = ImageFont.truetype(font_pos, <span class="number">40</span>)</div><div class="line">    dr.text((<span class="number">10</span>, <span class="number">5</span>), text, font=font, fill=<span class="string">"#FF0000"</span>)<span class="comment">#先把文字添加在这张新建图片上</span></div><div class="line">    foreimg.save(<span class="string">'2.png'</span>)</div><div class="line">    foreimg = Image.open(<span class="string">'2.png'</span>)</div><div class="line">    backimg.paste(foreimg, (backimg.size[<span class="number">0</span>]<span class="number">-50</span>, <span class="number">0</span>))<span class="comment">#合并图片</span></div><div class="line">    backimg.show()</div><div class="line">    backimg.save(<span class="string">"复件"</span>+img_pos)</div><div class="line"></div><div class="line"></div><div class="line">draw_str(<span class="string">'1.png'</span>, <span class="string">'/usr/share/fonts/truetype/ubuntu-font-family/Ubuntu-R.ttf'</span>, <span class="string">'1'</span>)</div></pre></td></tr></table></figure></p>
+<p>附效果：</p>
+<blockquote>
+<p>原图片：<img src="http://7xlnl2.com1.z0.glb.clouddn.com/post29-原图片.png" alt="原图片"></p>
+<p>中间产生图片：<img src="http://7xlnl2.com1.z0.glb.clouddn.com/post29-中间图片.png" alt="中间图片"></p>
+<p>最终结果：<img src="http://7xlnl2.com1.z0.glb.clouddn.com/post29-新图片.png" alt="新图片"></p>
+</blockquote>
+</div><div class="post-footer"><div class="meta"><div class="info"><i class="fa fa-sun-o"></i><span class="date">2015-09-09</span><i class="fa fa-comment-o"></i><a href="/2015/09/09/python练习册之0000-为图片添加文字/#comments">评论</a><i class="fa fa-tag"></i><a href="/categories/coding/" title="coding" class="tag">coding </a><a href="/tags/python/" title="python" class="tag">python </a></div></div></div></div><div class="share"><div class="evernote"><a href="javascript:(function(){EN_CLIP_HOST='http://www.evernote.com';try{var%20x=document.createElement('SCRIPT');x.type='text/javascript';x.src=EN_CLIP_HOST+'/public/bookmarkClipper.js?'+(new%20Date().getTime()/100000);document.getElementsByTagName('head')[0].appendChild(x);}catch(e){location.href=EN_CLIP_HOST+'/clip.action?url='+encodeURIComponent(location.href)+'&amp;title='+encodeURIComponent(document.title);}})();" ref="nofollow" target="_blank" class="fa fa-bookmark"></a></div><div class="weibo"><a href="javascript:void((function(s,d,e){try{}catch(e){}var f='http://service.weibo.com/share/share.php?',u=d.location.href,p=['url=',e(u),'&amp;title=',e(d.title),'&amp;appkey=2924220432'].join('');function a(){if(!window.open([f,p].join(''),'mb',['toolbar=0,status=0,resizable=1,width=620,height=450,left=',(s.width-620)/2,',top=',(s.height-450)/2].join('')))u.href=[f,p].join('');};if(/Firefox/.test(navigator.userAgent)){setTimeout(a,0)}else{a()}})(screen,document,encodeURIComponent));" class="fa fa-weibo"></a></div><div class="twitter"><a href="http://twitter.com/home?status=,http://blog.yinwoods.work/2015/09/09/python练习册之0000-为图片添加文字/,yinwoods,python练习册之【0000-为图片添加文字】,;" class="fa fa-twitter"></a></div></div><div class="pagination"><ul class="clearfix"><li class="pre pagbuttons"><a role="navigation" href="/2015/09/10/python练习册之0005-改变图片分辨率/" title="python练习册之【0005-改变图片分辨率】" class="btn">上一篇</a></li><li class="next pagbuttons"><a role="navigation" href="/2015/09/09/python练习册之0001-生成激活码/" title="python练习册之【0001，0002-添加数据到mysql】" class="btn">下一篇</a></li></ul></div><a id="comments"></a><div id="disqus_thread"></div><script>var disqus_shortname = 'yinwoods';
+var disqus_identifier = '2015/09/09/python练习册之0000-为图片添加文字/';
+var disqus_title = 'python练习册之【0000-为图片添加文字】';
+var disqus_url = 'http://blog.yinwoods.work/2015/09/09/python练习册之0000-为图片添加文字/';
+(function() {
+    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+})();</script><script id="dsq-count-scr" src="//yinwoods.disqus.com/count.js" async></script></div></div></div></div><script src="/js/jquery.js"></script><script src="/js/jquery-migrate-1.2.1.min.js"></script><script src="/js/jquery.appear.js"></script></body></html>

@@ -1,34 +1,61 @@
-include mixins
-
-extends partial/layout
-
-block site_title
-    != page.title + " · " + config.title
-
-block description
-    - var desc = page.desc || strip_html(page.content).replace(/^\s*/, '').replace(/\s*$/, '').substring(0, 150);
-    meta(name="description", content=desc)
-
-block content
-  .autopagerize_page_element: .content: .post-page
-    include mixins
-    +make_post(page, true)
-    .share
-      .evernote
-        a.fa.fa-bookmark(href="javascript:(function(){EN_CLIP_HOST='http://www.evernote.com';try{var%20x=document.createElement('SCRIPT');x.type='text/javascript';x.src=EN_CLIP_HOST+'/public/bookmarkClipper.js?'+(new%20Date().getTime()/100000);document.getElementsByTagName('head')[0].appendChild(x);}catch(e){location.href=EN_CLIP_HOST+'/clip.action?url='+encodeURIComponent(location.href)+'&title='+encodeURIComponent(document.title);}})();", ref="nofollow", target="_blank")
-      .weibo
-        a.fa.fa-weibo(href="javascript:void((function(s,d,e){try{}catch(e){}var f='http://service.weibo.com/share/share.php?',u=d.location.href,p=['url=',e(u),'&title=',e(d.title),'&appkey=2924220432'].join('');function a(){if(!window.open([f,p].join(''),'mb',['toolbar=0,status=0,resizable=1,width=620,height=450,left=',(s.width-620)/2,',top=',(s.height-450)/2].join('')))u.href=[f,p].join('');};if(/Firefox/.test(navigator.userAgent)){setTimeout(a,0)}else{a()}})(screen,document,encodeURIComponent));")
-      .twitter
-        a.fa.fa-twitter(href=url_for("http://twitter.com/home?status="+","+config.url+"/"+page.path+","+config.title+","+page.title+",;"))
-    - var prev = page.prev ? page.prev.path : false;
-    - var next = page.next ? page.next.path : false;
-    .pagination
-      ul.clearfix
-        if prev
-          li.pre.pagbuttons
-            a.btn(role="navigation",href=url_for(prev), title=page.prev.title)!= __('prev_post')
-        if next
-          li.next.pagbuttons
-            a.btn(role="navigation",href=url_for(next), title=page.next.title)!= __('next_post')
-    if page.comments
-        include partial/comments
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><meta name="author" content="yinwoods,yinwoods#163.com"><title>yinwoods个人博客搭建成功 · yinwoods</title><meta name="description" content="这两天在和小强忙着使用BNU OJ在GitHub上的源代码构建我们的ZZU OJ有兴趣的朋友请移步ZZUOJ-BASEON-BNUOJ From GitHub,今晚算是差不多完成了，所以破格熬个夜吧:)
+其实博客都搭建好多天了，一直没有时间写教程，不过搭建过程确实很简单，所以我写这篇文章也是出于学习"><meta name="keywords" content="Hexo,Linux,Python"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="renderer" content="webkit"><link rel="short icon" href="/images/favicon.png" type="image/x-icon"><link rel="stylesheet" href="/css/style.css"><link rel="stylesheet" href="/css/blog_basic.css"><link rel="stylesheet" href="/css/font-awesome.min.css"><link rel="alternate" type="application/atom+xml" title="ATOM 1.0" href="/atom.xml"></head><body><div class="sidebar animated fadeInDown"><div class="logo-title"><div class="title"><img src="/images/logo@2x.png" style="width:127px;"><h3 title=""><a href="/">yinwoods</a></h3><div class="description"><p>To Be A Better Man!😈</p></div></div></div><ul class="social-links"><li><a href="http://weibo.com/yinwoods"><i class="fa fa-weibo"></i></a></li><li><a href="http://facebook.com/yinwoods"><i class="fa fa-facebook"></i></a></li><li><a href="http://github.com/yinwoods"><i class="fa fa-github"></i></a></li></ul><div class="footer"><a target="_blank" href="/"><span>Theme by </span></a><a href="https://www.caicai.me"> CaiCai </a><span>&</span><a href="https://github.com/Ben02/hexo-theme-Anatole"> Ben</a><div class="by_farbox"><a href="https://hexo.io/zh-cn/" target="_blank">Proudly published with Hexo&#65281;</a></div></div></div><div class="main"><div class="page-top animated fadeInDown"><div class="nav"><li><a href="/">首页</a></li><li><a href="/archives">归档</a></li><li><a href="/links">友链</a></li><li><a href="/about">关于</a></li></div><div class="information"><div class="back_btn"><li><a onclick="window.history.go(-1)" class="fa fa-chevron-left"> </a></li></div><div class="avatar"><img src="/images/favicon.png"></div></div></div><div class="autopagerize_page_element"><div class="content"><div class="post-page"><div class="post animated fadeInDown"><div class="post-title"><h3><a>yinwoods个人博客搭建成功</a></h3></div><div class="post-content"><p>这两天在和小强忙着使用BNU OJ在GitHub上的源代码构建我们的ZZU OJ有兴趣的朋友请移步<a href="https://github.com/ZZUACM/ZZUOJ-BASEON-BNUOJ" target="_blank" rel="external">ZZUOJ-BASEON-BNUOJ From GitHub</a>,今晚算是差不多完成了，所以破格熬个夜吧:)</p>
+<p>其实博客都搭建好多天了，一直没有时间写教程，不过搭建过程确实很简单，所以我写这篇文章也是出于学习jekyll编写博客的目的吧。</p>
+<p>客观的说CSDN的博客现在是越做越好了，可是感觉自己的博客放在别人的站点上总是怪怪的。。。</p>
+<p>在搭建这个博客的过程中，用了整整一天的时间，主要是因为安装jekyll时老是出错。</p>
+<p>下面是详细步骤：</p>
+<p>搭建博客前，可以视个人需求考虑要不要购买域名，本人是在<a href="http://www.godaddy.com/" target="_blank" rel="external">GOdday</a>上购买的域名（yinwoods.com）<br>160￥使用两年</p>
+<p>后来听朋友说在<a href="http://www.net.cn/?spm=5334.642894.2.3.8W3O0N" target="_blank" rel="external">万网</a>上买第一年29￥，第二年49￥，而且还可以使用阿里云两年的免费虚拟主机。</p>
+<p>有兴趣的同学可以考虑下。</p>
+<p>解析域名我是在<a href="https://www.dnspod.cn/" target="_blank" rel="external">DNSPod</a>上做的，免费的，只需要注册一个账号而已。</p>
+<p>接下来就是利用GitHub Pages配置个人博客页面了，这个很简单</p>
+<p>可以参考以下几篇文章：</p>
+<ul>
+<li><a href="http://beiyuu.com/github-pages/" target="_blank" rel="external">使用Github Pages建独立博客</a></li>
+<li><a href="https://help.github.com/articles/setting-up-a-custom-domain-with-github-pages/" target="_blank" rel="external">Setting up a custom domain with GitHub Pages</a></li>
+</ul>
+<p>上面的文章已经足够详细了，相信大家在这些步骤上不会遇到问题。</p>
+<p>我之所以花费一天的时间搭建博客，很大一部分功夫都是花费在安装jekyll</p>
+<p>安装过程中千万记住不要使用</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sudo apt-get install jekyll</div></pre></td></tr></table></figure>
+<p>语句安装，用这种方法安装会导致各种问题。。。</p>
+<p>在安装jekyll之前要先装Ruby，如果你在安装Ruby过程中遇到问题，可以参考下面这篇文章：</p>
+<ul>
+<li><a href="http://ruby.taobao.org/" target="_blank" rel="external">RubyGems 镜像 - 淘宝网</a></li>
+</ul>
+<p>如果你使用Ubuntu安装jekyll，那么你有福了：</p>
+<ul>
+<li><p><a href="http://sharadchhetri.com/2014/06/30/install-jekyll-on-ubuntu-14-04-lts/" target="_blank" rel="external">Install Jekyll on Ubuntu 14.04 LTS</a></p>
+</li>
+<li><p><a href="http://askubuntu.com/questions/305884/how-to-install-jekyll" target="_blank" rel="external">How to install jekyll?</a></p>
+</li>
+</ul>
+<p>安装jekyll中遇到问题的话，请参考：</p>
+<ul>
+<li><p><a href="https://github.com/jekyll/jekyll-help/issues/209" target="_blank" rel="external">Installing Jekyll: ERROR: Failed to build gem native extension.</a></p>
+</li>
+<li><p><a href="http://stackoverflow.com/questions/10725767/error-installing-jekyll-native-extension-build" target="_blank" rel="external">Error Installing Jekyll - Native Extension Build</a></p>
+</li>
+</ul>
+<p>安装jekyll成功后，jekyll的使用方法：</p>
+<ul>
+<li><p><a href="http://jekyllbootstrap.com/usage/jekyll-quick-start.html" target="_blank" rel="external">Jekyll QuickStart</a></p>
+</li>
+<li><p><a href="http://jekyllcn.com/" target="_blank" rel="external">jekyll 简单的静态博客</a></p>
+</li>
+</ul>
+<p>为博客添加评论功能：<br>参考：</p>
+<ul>
+<li><a href="http://blog.masr.in/geek/add_comment_to_jekyll.html" target="_blank" rel="external">jekyll+github构建简约博客</a></li>
+<li><a href="https://help.disqus.com/customer/portal/articles/472138-jekyll-installation-instructions" target="_blank" rel="external">Jekyll Installation Instructions</a></li>
+</ul>
+<p>当然对于初学者，你完全可以去 <a href="https://github.com" target="_blank" rel="external">GitHub</a> 上 fork 别人的代码，删除_post下所有文章后当做自己的主题使用。</p>
+</div><div class="post-footer"><div class="meta"><div class="info"><i class="fa fa-sun-o"></i><span class="date">2015-04-26</span><i class="fa fa-comment-o"></i><a href="/2015/04/26/个人博客搭建成功/#comments">评论</a><i class="fa fa-tag"></i><a href="/categories/coding/" title="coding" class="tag">coding </a><a href="/tags/jekyll/" title="jekyll" class="tag">jekyll </a></div></div></div></div><div class="share"><div class="evernote"><a href="javascript:(function(){EN_CLIP_HOST='http://www.evernote.com';try{var%20x=document.createElement('SCRIPT');x.type='text/javascript';x.src=EN_CLIP_HOST+'/public/bookmarkClipper.js?'+(new%20Date().getTime()/100000);document.getElementsByTagName('head')[0].appendChild(x);}catch(e){location.href=EN_CLIP_HOST+'/clip.action?url='+encodeURIComponent(location.href)+'&amp;title='+encodeURIComponent(document.title);}})();" ref="nofollow" target="_blank" class="fa fa-bookmark"></a></div><div class="weibo"><a href="javascript:void((function(s,d,e){try{}catch(e){}var f='http://service.weibo.com/share/share.php?',u=d.location.href,p=['url=',e(u),'&amp;title=',e(d.title),'&amp;appkey=2924220432'].join('');function a(){if(!window.open([f,p].join(''),'mb',['toolbar=0,status=0,resizable=1,width=620,height=450,left=',(s.width-620)/2,',top=',(s.height-450)/2].join('')))u.href=[f,p].join('');};if(/Firefox/.test(navigator.userAgent)){setTimeout(a,0)}else{a()}})(screen,document,encodeURIComponent));" class="fa fa-weibo"></a></div><div class="twitter"><a href="http://twitter.com/home?status=,http://blog.yinwoods.work/2015/04/26/个人博客搭建成功/,yinwoods,yinwoods个人博客搭建成功,;" class="fa fa-twitter"></a></div></div><div class="pagination"><ul class="clearfix"><li class="pre pagbuttons"><a role="navigation" href="/2015/04/27/又是一个失眠的夜晚/" title="又是一个失眠的夜晚" class="btn">上一篇</a></li></ul></div><a id="comments"></a><div id="disqus_thread"></div><script>var disqus_shortname = 'yinwoods';
+var disqus_identifier = '2015/04/26/个人博客搭建成功/';
+var disqus_title = 'yinwoods个人博客搭建成功';
+var disqus_url = 'http://blog.yinwoods.work/2015/04/26/个人博客搭建成功/';
+(function() {
+    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+})();</script><script id="dsq-count-scr" src="//yinwoods.disqus.com/count.js" async></script></div></div></div></div><script src="/js/jquery.js"></script><script src="/js/jquery-migrate-1.2.1.min.js"></script><script src="/js/jquery.appear.js"></script></body></html>

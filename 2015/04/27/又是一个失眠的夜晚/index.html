@@ -1,34 +1,37 @@
-include mixins
-
-extends partial/layout
-
-block site_title
-    != page.title + " · " + config.title
-
-block description
-    - var desc = page.desc || strip_html(page.content).replace(/^\s*/, '').replace(/\s*$/, '').substring(0, 150);
-    meta(name="description", content=desc)
-
-block content
-  .autopagerize_page_element: .content: .post-page
-    include mixins
-    +make_post(page, true)
-    .share
-      .evernote
-        a.fa.fa-bookmark(href="javascript:(function(){EN_CLIP_HOST='http://www.evernote.com';try{var%20x=document.createElement('SCRIPT');x.type='text/javascript';x.src=EN_CLIP_HOST+'/public/bookmarkClipper.js?'+(new%20Date().getTime()/100000);document.getElementsByTagName('head')[0].appendChild(x);}catch(e){location.href=EN_CLIP_HOST+'/clip.action?url='+encodeURIComponent(location.href)+'&title='+encodeURIComponent(document.title);}})();", ref="nofollow", target="_blank")
-      .weibo
-        a.fa.fa-weibo(href="javascript:void((function(s,d,e){try{}catch(e){}var f='http://service.weibo.com/share/share.php?',u=d.location.href,p=['url=',e(u),'&title=',e(d.title),'&appkey=2924220432'].join('');function a(){if(!window.open([f,p].join(''),'mb',['toolbar=0,status=0,resizable=1,width=620,height=450,left=',(s.width-620)/2,',top=',(s.height-450)/2].join('')))u.href=[f,p].join('');};if(/Firefox/.test(navigator.userAgent)){setTimeout(a,0)}else{a()}})(screen,document,encodeURIComponent));")
-      .twitter
-        a.fa.fa-twitter(href=url_for("http://twitter.com/home?status="+","+config.url+"/"+page.path+","+config.title+","+page.title+",;"))
-    - var prev = page.prev ? page.prev.path : false;
-    - var next = page.next ? page.next.path : false;
-    .pagination
-      ul.clearfix
-        if prev
-          li.pre.pagbuttons
-            a.btn(role="navigation",href=url_for(prev), title=page.prev.title)!= __('prev_post')
-        if next
-          li.next.pagbuttons
-            a.btn(role="navigation",href=url_for(next), title=page.next.title)!= __('next_post')
-    if page.comments
-        include partial/comments
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><meta name="author" content="yinwoods,yinwoods#163.com"><title>又是一个失眠的夜晚 · yinwoods</title><meta name="description" content="可能是昨晚熬夜的缘故吧，今晚又失眠了。
+说起我的失眠还真是很奇怪，开始于大二下的时候，那个时候总觉得寝室不够安静，刚好了解到ACM实验室可以住人且环境比较好，所以经过深思熟虑后决定搬过去住。
+实验室不是安静，而是异常地安静！奇怪就奇怪在搬过去之后反而失眠更严重了。。。尤其是上学期，好多次都是坐在电脑"><meta name="keywords" content="Hexo,Linux,Python"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="renderer" content="webkit"><link rel="short icon" href="/images/favicon.png" type="image/x-icon"><link rel="stylesheet" href="/css/style.css"><link rel="stylesheet" href="/css/blog_basic.css"><link rel="stylesheet" href="/css/font-awesome.min.css"><link rel="alternate" type="application/atom+xml" title="ATOM 1.0" href="/atom.xml"></head><body><div class="sidebar animated fadeInDown"><div class="logo-title"><div class="title"><img src="/images/logo@2x.png" style="width:127px;"><h3 title=""><a href="/">yinwoods</a></h3><div class="description"><p>To Be A Better Man!😈</p></div></div></div><ul class="social-links"><li><a href="http://weibo.com/yinwoods"><i class="fa fa-weibo"></i></a></li><li><a href="http://facebook.com/yinwoods"><i class="fa fa-facebook"></i></a></li><li><a href="http://github.com/yinwoods"><i class="fa fa-github"></i></a></li></ul><div class="footer"><a target="_blank" href="/"><span>Theme by </span></a><a href="https://www.caicai.me"> CaiCai </a><span>&</span><a href="https://github.com/Ben02/hexo-theme-Anatole"> Ben</a><div class="by_farbox"><a href="https://hexo.io/zh-cn/" target="_blank">Proudly published with Hexo&#65281;</a></div></div></div><div class="main"><div class="page-top animated fadeInDown"><div class="nav"><li><a href="/">首页</a></li><li><a href="/archives">归档</a></li><li><a href="/links">友链</a></li><li><a href="/about">关于</a></li></div><div class="information"><div class="back_btn"><li><a onclick="window.history.go(-1)" class="fa fa-chevron-left"> </a></li></div><div class="avatar"><img src="/images/favicon.png"></div></div></div><div class="autopagerize_page_element"><div class="content"><div class="post-page"><div class="post animated fadeInDown"><div class="post-title"><h3><a>又是一个失眠的夜晚</a></h3></div><div class="post-content"><p>可能是昨晚熬夜的缘故吧，今晚又失眠了。</p>
+<p>说起我的失眠还真是很奇怪，开始于大二下的时候，那个时候总觉得寝室不够安静，刚好了解到ACM实验室可以住人且环境比较好，所以经过深思熟虑后决定搬过去住。</p>
+<p>实验室不是安静，而是异常地安静！奇怪就奇怪在搬过去之后反而失眠更严重了。。。尤其是上学期，好多次都是坐在电脑旁做到天亮</p>
+<p>其实我习惯于在不好的事情中看到其有价值的地方，因此在我看来，失眠也并不是一无是处</p>
+<p>失眠的人都知道：很多事情只有在夜晚才能够静下心来思考，才能够反思自己的问题</p>
+<p>失眠的时候把这一天所遇到的人和事在脑海里过一遍，总是会很有收获。</p>
+<p>从上学期寒假开始就很少失眠了，因为每天比较累，可能经过这段时间的休整，整个人又缓过来了，所以又开始失眠了</p>
+<p>不过这以后的失眠我不会再想以前那样浪费时间，而是学着高效地利用这段时间学习一些新知识</p>
+<p>其实话说回来，这几天并不轻松，总有一种与时间赛跑的感觉</p>
+<p>原因在于：</p>
+<blockquote>
+<ul>
+<li>课程多，任务重，时间少；这就不得不吐槽一下我们的课程安排了，大一、大二课程轻松，时间少；等到大三下学期了，大家都在为自己的选择而奔波忙碌的时候，反倒是各种专业课，又赶上这学期只有18周（含两周实习、两周考试周）。。。</li>
+<li>这学期由我和郭伟强来负责ACM实验室的管理，又赶上老师发放新设备，赞助商赞助等各种事情，刚忙完ACM新生杯，又迎来了河南省省赛。。。</li>
+<li>要为保研做准备，准备材料、关注学校、联系导师等等</li>
+<li>最坑的是赶上专业认证。。。所以各种实验报告一个不能少（我还被学长蛊惑选了所有选修课，一周21节课你敢信O_o）</li>
+<li>以前只有中澳才有的工程设计今年也为我们设置了。。。</li>
+<li>要把BNU OJ的源码移到我们的平台上，这几天还想再改改博客的页面。</li>
+<li>还要考驾照（科目二已跪一次T_T）</li>
+<li>…</li>
+</ul>
+</blockquote>
+<p>列出来的这一部分就可以知道我根本闲不下来啊。。。失眠也可能是因为这几天压力比较大吧</p>
+<p>话不多说了，趁着夜深人静的时候发发牢骚，该干什么还干什么去吧。。。</p>
+<p>最后卖个萌，测一下Markdown 图片显示效果</p>
+<p><img src="http://7xlnl2.com1.z0.glb.clouddn.com/post2-卖萌.jpg" alt="卖个萌"></p>
+</div><div class="post-footer"><div class="meta"><div class="info"><i class="fa fa-sun-o"></i><span class="date">2015-04-27</span><i class="fa fa-comment-o"></i><a href="/2015/04/27/又是一个失眠的夜晚/#comments">评论</a><i class="fa fa-tag"></i><a href="/categories/diary/" title="diary" class="tag">diary </a><a href="/tags/thoughts/" title="thoughts" class="tag">thoughts </a></div></div></div></div><div class="share"><div class="evernote"><a href="javascript:(function(){EN_CLIP_HOST='http://www.evernote.com';try{var%20x=document.createElement('SCRIPT');x.type='text/javascript';x.src=EN_CLIP_HOST+'/public/bookmarkClipper.js?'+(new%20Date().getTime()/100000);document.getElementsByTagName('head')[0].appendChild(x);}catch(e){location.href=EN_CLIP_HOST+'/clip.action?url='+encodeURIComponent(location.href)+'&amp;title='+encodeURIComponent(document.title);}})();" ref="nofollow" target="_blank" class="fa fa-bookmark"></a></div><div class="weibo"><a href="javascript:void((function(s,d,e){try{}catch(e){}var f='http://service.weibo.com/share/share.php?',u=d.location.href,p=['url=',e(u),'&amp;title=',e(d.title),'&amp;appkey=2924220432'].join('');function a(){if(!window.open([f,p].join(''),'mb',['toolbar=0,status=0,resizable=1,width=620,height=450,left=',(s.width-620)/2,',top=',(s.height-450)/2].join('')))u.href=[f,p].join('');};if(/Firefox/.test(navigator.userAgent)){setTimeout(a,0)}else{a()}})(screen,document,encodeURIComponent));" class="fa fa-weibo"></a></div><div class="twitter"><a href="http://twitter.com/home?status=,http://blog.yinwoods.work/2015/04/27/又是一个失眠的夜晚/,yinwoods,又是一个失眠的夜晚,;" class="fa fa-twitter"></a></div></div><div class="pagination"><ul class="clearfix"><li class="pre pagbuttons"><a role="navigation" href="/2015/04/28/IIya-and-Escalator-概率DP/" title="Ilya and Escalator" class="btn">上一篇</a></li><li class="next pagbuttons"><a role="navigation" href="/2015/04/26/个人博客搭建成功/" title="yinwoods个人博客搭建成功" class="btn">下一篇</a></li></ul></div><a id="comments"></a><div id="disqus_thread"></div><script>var disqus_shortname = 'yinwoods';
+var disqus_identifier = '2015/04/27/又是一个失眠的夜晚/';
+var disqus_title = '又是一个失眠的夜晚';
+var disqus_url = 'http://blog.yinwoods.work/2015/04/27/又是一个失眠的夜晚/';
+(function() {
+    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+})();</script><script id="dsq-count-scr" src="//yinwoods.disqus.com/count.js" async></script></div></div></div></div><script src="/js/jquery.js"></script><script src="/js/jquery-migrate-1.2.1.min.js"></script><script src="/js/jquery.appear.js"></script></body></html>

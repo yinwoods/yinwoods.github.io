@@ -1,34 +1,81 @@
-include mixins
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><meta name="author" content="yinwoods,yinwoods#163.com"><title>C++ 【OOP】继承篇 · yinwoods</title><meta name="description" content="OOP之继承篇继承：
+1、公有继承：class A: public B
+2、保护继承：class A: protected B
+3、私有继承：class A: private B
 
-extends partial/layout
-
-block site_title
-    != page.title + " · " + config.title
-
-block description
-    - var desc = page.desc || strip_html(page.content).replace(/^\s*/, '').replace(/\s*$/, '').substring(0, 150);
-    meta(name="description", content=desc)
-
-block content
-  .autopagerize_page_element: .content: .post-page
-    include mixins
-    +make_post(page, true)
-    .share
-      .evernote
-        a.fa.fa-bookmark(href="javascript:(function(){EN_CLIP_HOST='http://www.evernote.com';try{var%20x=document.createElement('SCRIPT');x.type='text/javascript';x.src=EN_CLIP_HOST+'/public/bookmarkClipper.js?'+(new%20Date().getTime()/100000);document.getElementsByTagName('head')[0].appendChild(x);}catch(e){location.href=EN_CLIP_HOST+'/clip.action?url='+encodeURIComponent(location.href)+'&title='+encodeURIComponent(document.title);}})();", ref="nofollow", target="_blank")
-      .weibo
-        a.fa.fa-weibo(href="javascript:void((function(s,d,e){try{}catch(e){}var f='http://service.weibo.com/share/share.php?',u=d.location.href,p=['url=',e(u),'&title=',e(d.title),'&appkey=2924220432'].join('');function a(){if(!window.open([f,p].join(''),'mb',['toolbar=0,status=0,resizable=1,width=620,height=450,left=',(s.width-620)/2,',top=',(s.height-450)/2].join('')))u.href=[f,p].join('');};if(/Firefox/.test(navigator.userAgent)){setTimeout(a,0)}else{a()}})(screen,document,encodeURIComponent));")
-      .twitter
-        a.fa.fa-twitter(href=url_for("http://twitter.com/home?status="+","+config.url+"/"+page.path+","+config.title+","+page.title+",;"))
-    - var prev = page.prev ? page.prev.path : false;
-    - var next = page.next ? page.next.path : false;
-    .pagination
-      ul.clearfix
-        if prev
-          li.pre.pagbuttons
-            a.btn(role="navigation",href=url_for(prev), title=page.prev.title)!= __('prev_post')
-        if next
-          li.next.pagbuttons
-            a.btn(role="navigation",href=url_for(next), title=page.next.title)!= __('next_post')
-    if page.comments
-        include partial/comments
+protected在没有继承的情况下含义与private相同
+公有继承：子类public只能继承父类public部分
+"><meta name="keywords" content="Hexo,Linux,Python"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="renderer" content="webkit"><link rel="short icon" href="/images/favicon.png" type="image/x-icon"><link rel="stylesheet" href="/css/style.css"><link rel="stylesheet" href="/css/blog_basic.css"><link rel="stylesheet" href="/css/font-awesome.min.css"><link rel="alternate" type="application/atom+xml" title="ATOM 1.0" href="/atom.xml"></head><body><div class="sidebar animated fadeInDown"><div class="logo-title"><div class="title"><img src="/images/logo@2x.png" style="width:127px;"><h3 title=""><a href="/">yinwoods</a></h3><div class="description"><p>To Be A Better Man!😈</p></div></div></div><ul class="social-links"><li><a href="http://weibo.com/yinwoods"><i class="fa fa-weibo"></i></a></li><li><a href="http://facebook.com/yinwoods"><i class="fa fa-facebook"></i></a></li><li><a href="http://github.com/yinwoods"><i class="fa fa-github"></i></a></li></ul><div class="footer"><a target="_blank" href="/"><span>Theme by </span></a><a href="https://www.caicai.me"> CaiCai </a><span>&</span><a href="https://github.com/Ben02/hexo-theme-Anatole"> Ben</a><div class="by_farbox"><a href="https://hexo.io/zh-cn/" target="_blank">Proudly published with Hexo&#65281;</a></div></div></div><div class="main"><div class="page-top animated fadeInDown"><div class="nav"><li><a href="/">首页</a></li><li><a href="/archives">归档</a></li><li><a href="/links">友链</a></li><li><a href="/about">关于</a></li></div><div class="information"><div class="back_btn"><li><a onclick="window.history.go(-1)" class="fa fa-chevron-left"> </a></li></div><div class="avatar"><img src="/images/favicon.png"></div></div></div><div class="autopagerize_page_element"><div class="content"><div class="post-page"><div class="post animated fadeInDown"><div class="post-title"><h3><a>C++ 【OOP】继承篇</a></h3></div><div class="post-content"><h3 id="OOP之继承篇"><a href="#OOP之继承篇" class="headerlink" title="OOP之继承篇"></a>OOP之继承篇</h3><h4 id="继承："><a href="#继承：" class="headerlink" title="继承："></a>继承：</h4><blockquote>
+<p>1、公有继承：<code>class A: public B</code></p>
+<p>2、保护继承：<code>class A: protected B</code></p>
+<p>3、私有继承：<code>class A: private B</code></p>
+</blockquote>
+<p><strong>protected在没有继承的情况下含义与private相同</strong></p>
+<h4 id="公有继承："><a href="#公有继承：" class="headerlink" title="公有继承："></a>公有继承：</h4><p>子类public只能继承父类public部分</p>
+<p>子类protected只能继承父类protected部分</p>
+<p>子类可通过public函数访问protected属性</p>
+<blockquote>
+<p>对于公有继承：</p>
+<blockquote>
+<p>父类<code>private</code>成员——————————【子类不可访问】</p>
+<p>父类<code>protected</code>成员—————————【继承为子类protected成员】</p>
+<p>父类<code>public</code>成员——————————-【继承为子类public成员】</p>
+</blockquote>
+</blockquote>
+<h4 id="保护继承"><a href="#保护继承" class="headerlink" title="保护继承"></a>保护继承</h4><blockquote>
+<p>对于保护继承：</p>
+<blockquote>
+<p>父类<code>private</code>成员 ——————————-【子类不可访问】</p>
+<p>父类<code>protected</code>成员—————————-【继承为子类protected成员】</p>
+<p>父类<code>public</code>成员———————————【继承为子类protected成员】</p>
+</blockquote>
+</blockquote>
+<h4 id="私有继承"><a href="#私有继承" class="headerlink" title="私有继承"></a>私有继承</h4><blockquote>
+<p>对于私有继承：</p>
+<blockquote>
+<p>父类<code>private</code>成员 ——————————-【子类不可访问】</p>
+<p>父类<code>protected</code>成员—————————-【继承为子类private成员】</p>
+<p>父类<code>public</code>成员———————————【继承为子类private成员】</p>
+</blockquote>
+</blockquote>
+<p>protected继承：子类只能访问到自己public下的数据成员、成员函数，而不能访问基类public下的数据成员、成员函数。</p>
+<p>但是可以通过自己的成员函数访问到基类的数据成员及成员函数，也就是说不能直接访问。（因为这些数据成员及成员函数为private）</p>
+<h4 id="隐藏"><a href="#隐藏" class="headerlink" title="隐藏"></a>隐藏</h4><p>子类覆盖父类同名成员函数，此时仍然可以访问父类的该函数</p>
+<p>父子关系+成员函数同名，参数不同=隐藏</p>
+<p>父子关系+成员函数同名，参数相同=覆盖</p>
+<p>访问父类成员函数方法：<code>child.Person::func();</code>(child表示对象，Person表示类，func为父子类同名的成员函数)</p>
+<h4 id="IS-A关系"><a href="#IS-A关系" class="headerlink" title="IS A关系"></a>IS A关系</h4><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">MAN - BOY</div><div class="line"></div><div class="line">BOY b1;</div><div class="line">MAN m1 = b1;</div><div class="line">MAN *m2 = &amp;b1;</div></pre></td></tr></table></figure>
+<p>因为BOY是MAN的子集</p>
+<p>子类对象赋值给父类对象时，父类对象只能获得二者共有的成员；对于父类指针指向子类对象的情况，指针只能访问共有的成员。</p>
+<h4 id="虚继承"><a href="#虚继承" class="headerlink" title="虚继承"></a>虚继承</h4><p>菱形继承（含多继承、多重继承）-&gt;数据冗余-&gt;用虚继承解决数据冗余</p>
+<p>&gt;<br><a href="https://zh.wikipedia.org/wiki/%E8%99%9A%E7%BB%A7%E6%89%BF" target="_blank" rel="external">维基百科虚继承</a><br>&gt;</p>
+<p>举例来说：假如类A和类B各自从类X派生（非虚继承且假设类X包含一些数据成员），且类C同时多继承自类A和B，那么C的对象就会拥有两套X的实例数据（可分别独立访问，一般要用适当的消歧义限定符）。但是如果类A与B各自虚继承了类X，那么C的对象就只包含一套类X的实例数据。</p>
+<p>宏定义解决菱形重复引入定义的问题</p>
+<p>在C++中，基类可以通过使用关键字<code>virtual来</code>声明虚继承关系。</p>
+<h4 id="下文源自：关于C-中的虚拟继承的一些总结"><a href="#下文源自：关于C-中的虚拟继承的一些总结" class="headerlink" title="下文源自：关于C++中的虚拟继承的一些总结"></a>下文源自：<a href="http://www.cnblogs.com/BeyondAnyTime/archive/2012/06/05/2537451.html" target="_blank" rel="external">关于C++中的虚拟继承的一些总结</a></h4><h5 id="1-为什么要引入虚拟继承"><a href="#1-为什么要引入虚拟继承" class="headerlink" title="1.为什么要引入虚拟继承"></a>1.为什么要引入虚拟继承</h5><p>虚拟继承是多重继承中特有的概念。虚拟基类是为解决多重继承而出现的。如:类D继承自类B1、B2，而类B1、B2都继承自类A，因此在类D中两次出现类A中的变量和函数。为了节省内存空间，可以将B1、B2对A的继承定义为虚拟继承，而A就成了虚拟基类。实现的代码如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">A</span></span></div><div class="line"></div><div class="line"><span class="title">class</span> <span class="title">B1</span>:<span class="keyword">public</span> <span class="keyword">virtual</span> A;</div><div class="line"></div><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">B2</span>:</span><span class="keyword">public</span> <span class="keyword">virtual</span> A;</div><div class="line"></div><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">D</span>:</span><span class="keyword">public</span> B1,<span class="keyword">public</span> B2;</div></pre></td></tr></table></figure>
+<p>虚拟继承在一般的应用中很少用到，所以也往往被忽视，这也主要是因为在C++中，多重继承是不推荐的，也并不常用，而一旦离开了多重继承，虚拟继承就完全失去了存在的必要因为这样只会降低效率和占用更多的空间。</p>
+<h5 id="2-引入虚继承和直接继承会有什么区别呢"><a href="#2-引入虚继承和直接继承会有什么区别呢" class="headerlink" title="2.引入虚继承和直接继承会有什么区别呢"></a>2.引入虚继承和直接继承会有什么区别呢</h5><p>由于有了间接性和共享性两个特征，所以决定了虚继承体系下的对象在访问时必然会在时间和空间上与一般情况有较大不同。</p>
+<p>2.1时间：</p>
+<blockquote>
+<p>在通过继承类对象访问虚基类对象中的成员（包括数据成员和函数成员）时，都必须通过某种间接引用来完成，这样会增加引用寻址时间（就和虚函数一样），其实就是调整this指针以指向虚基类对象，只不过这个调整是运行时间接完成的。</p>
+</blockquote>
+<p>2.2空间：</p>
+<blockquote>
+<p>由于共享所以不必要在对象内存中保存多份虚基类子对象的拷贝，这样较之多继承节省空间。虚拟继承与普通继承不同的是，虚拟继承可以防止出现diamond继承时，一个派生类中同时出现了两个基类的子对象。也就是说，为了保证这一点，在虚拟继承情况下，基类子对象的布局是不同于普通继承的。因此，它需要多出一个指向基类子对象的指针。</p>
+</blockquote>
+<p>C++ OOP特性还可参考本站其他相关博文：</p>
+<blockquote>
+<p><a href="http://blog.yinwoods.com/coding/c%E4%B8%AD%E7%9A%84%E5%A4%9A%E6%80%81.html" target="_blank" rel="external">C++ 【oop】封装篇</a></p>
+<p><a href="http://blog.yinwoods.com/coding/coop%E5%A4%9A%E6%80%81%E7%AF%87.html" target="_blank" rel="external">C++ 【oop】多态篇</a></p>
+<p><a href="http://blog.yinwoods.com/coding/coop%E6%A8%A1%E6%9D%BF%E7%AF%87.html" target="_blank" rel="external">C++ 【oop】模板篇</a></p>
+</blockquote>
+</div><div class="post-footer"><div class="meta"><div class="info"><i class="fa fa-sun-o"></i><span class="date">2015-10-06</span><i class="fa fa-comment-o"></i><a href="/2015/10/06/c-oop继承篇/#comments">评论</a><i class="fa fa-tag"></i><a href="/categories/coding/" title="coding" class="tag">coding </a><a href="/tags/cpp/" title="cpp" class="tag">cpp </a></div></div></div></div><div class="share"><div class="evernote"><a href="javascript:(function(){EN_CLIP_HOST='http://www.evernote.com';try{var%20x=document.createElement('SCRIPT');x.type='text/javascript';x.src=EN_CLIP_HOST+'/public/bookmarkClipper.js?'+(new%20Date().getTime()/100000);document.getElementsByTagName('head')[0].appendChild(x);}catch(e){location.href=EN_CLIP_HOST+'/clip.action?url='+encodeURIComponent(location.href)+'&amp;title='+encodeURIComponent(document.title);}})();" ref="nofollow" target="_blank" class="fa fa-bookmark"></a></div><div class="weibo"><a href="javascript:void((function(s,d,e){try{}catch(e){}var f='http://service.weibo.com/share/share.php?',u=d.location.href,p=['url=',e(u),'&amp;title=',e(d.title),'&amp;appkey=2924220432'].join('');function a(){if(!window.open([f,p].join(''),'mb',['toolbar=0,status=0,resizable=1,width=620,height=450,left=',(s.width-620)/2,',top=',(s.height-450)/2].join('')))u.href=[f,p].join('');};if(/Firefox/.test(navigator.userAgent)){setTimeout(a,0)}else{a()}})(screen,document,encodeURIComponent));" class="fa fa-weibo"></a></div><div class="twitter"><a href="http://twitter.com/home?status=,http://blog.yinwoods.work/2015/10/06/c-oop继承篇/,yinwoods,C++ 【OOP】继承篇,;" class="fa fa-twitter"></a></div></div><div class="pagination"><ul class="clearfix"><li class="pre pagbuttons"><a role="navigation" href="/2015/10/06/coop多态篇/" title="C++【OOP】多态篇" class="btn">上一篇</a></li><li class="next pagbuttons"><a role="navigation" href="/2015/09/23/c中的多态/" title="C++ 【OOP】 封装篇" class="btn">下一篇</a></li></ul></div><a id="comments"></a><div id="disqus_thread"></div><script>var disqus_shortname = 'yinwoods';
+var disqus_identifier = '2015/10/06/c-oop继承篇/';
+var disqus_title = 'C++ 【OOP】继承篇';
+var disqus_url = 'http://blog.yinwoods.work/2015/10/06/c-oop继承篇/';
+(function() {
+    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+})();</script><script id="dsq-count-scr" src="//yinwoods.disqus.com/count.js" async></script></div></div></div></div><script src="/js/jquery.js"></script><script src="/js/jquery-migrate-1.2.1.min.js"></script><script src="/js/jquery.appear.js"></script></body></html>
