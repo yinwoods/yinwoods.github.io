@@ -1,33 +1,34 @@
-<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><meta name="author" content="yinwoods,yinwoods#163.com"><title>Jekyll博客标签云（tag_cloud）实现 · yinwoods</title><meta name="description" content="大概半个月之前就想要为博客添加标签云tag_cloud的功能了，直到昨晚才抽出时间来搞，开始查了网上很多教程，但是苦于对ruby的不了解，基本都会在某一步卡住。最后在这个过程中自己摸索出了怎么实现标签云tag_cloud的功能。。。。
-先用图展示下实现效果：
+include mixins
 
-实现过程主要分为以下几步：
+extends partial/layout
 
-1、在博"><meta name="keywords" content="Hexo,Linux,Python"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="renderer" content="webkit"><link rel="short icon" href="/images/favicon.png" type="image/x-icon"><link rel="stylesheet" href="/css/style.css"><link rel="stylesheet" href="/css/blog_basic.css"><link rel="stylesheet" href="/css/font-awesome.min.css"><link rel="alternate" type="application/atom+xml" title="ATOM 1.0" href="/atom.xml"></head><body><div class="sidebar animated fadeInDown"><div class="logo-title"><div class="title"><img src="/images/logo@2x.png" style="width:127px;"><h3 title=""><a href="/">yinwoods</a></h3><div class="description"><p>To Be A Better Man!😈</p></div></div></div><ul class="social-links"><li><a href="http://weibo.com/yinwoods"><i class="fa fa-weibo"></i></a></li><li><a href="http://facebook.com/yinwoods"><i class="fa fa-facebook"></i></a></li><li><a href="http://github.com/yinwoods"><i class="fa fa-github"></i></a></li></ul><div class="footer"><a target="_blank" href="/"><span>Theme by </span></a><a href="https://www.caicai.me"> CaiCai </a><span>&</span><a href="https://github.com/Ben02/hexo-theme-Anatole"> Ben</a><div class="by_farbox"><a href="https://hexo.io/zh-cn/" target="_blank">Proudly published with Hexo&#65281;</a></div></div></div><div class="main"><div class="page-top animated fadeInDown"><div class="nav"><li><a href="/">首页</a></li><li><a href="/archives">归档</a></li><li><a href="/links">友链</a></li><li><a href="/about">关于</a></li></div><div class="information"><div class="back_btn"><li><a onclick="window.history.go(-1)" class="fa fa-chevron-left"> </a></li></div><div class="avatar"><img src="/images/favicon.png"></div></div></div><div class="autopagerize_page_element"><div class="content"><div class="post-page"><div class="post animated fadeInDown"><div class="post-title"><h3><a>Jekyll博客标签云（tag_cloud）实现</a></h3></div><div class="post-content"><p>大概半个月之前就想要为博客添加标签云<code>tag_cloud</code>的功能了，直到昨晚才抽出时间来搞，开始查了网上很多教程，但是苦于对<code>ruby</code>的不了解，基本都会在某一步卡住。最后在这个过程中自己摸索出了怎么实现标签云<code>tag_cloud</code>的功能。。。。</p>
-<p>先用图展示下实现效果：<br><img src="http://7xlnl2.com1.z0.glb.clouddn.com/post23-tag_cloud1.png" alt="标签云"></p>
-<p><hr><br><img src="http://7xlnl2.com1.z0.glb.clouddn.com/post23-tag_cloud2.png" alt="标签云"></p>
-<p>实现过程主要分为以下几步：</p>
-<blockquote>
-<p>1、在博客根目录<code>_includes</code>下新建<code>tag_cloud.html</code>，内容如下：</p>
-<blockquote>
-<p><img src="http://7xlnl2.com1.z0.glb.clouddn.com/post23-tag_cloud3.png" alt="标签云"></p>
-<p>这里的<code>site.BASE_PATH</code>是在<code>config.yml</code>中定义的博客根目录；因为上面的代码直接写在博客里会自动执行，所以在这里用的是截图。</p>
-</blockquote>
-<p>2、为自己的博客添加<code>tags[]</code>标记，例如本篇博文被我用<code>tags[&#39;jekyll&#39;]</code>标记为<code>jekyll</code>，如果需要多个标记，用逗号隔开即可。</p>
-<p>3、在博客根目录下新建<code>tags</code>文件夹，并在该文件夹下新建所有对应<code>tag</code>名字的文件夹，例如这里新建<code>jekyll</code>文件夹。</p>
-<p>4、在每个<code>tag</code>文件夹下，新建一个<code>index.html</code>，内容如下：</p>
-<blockquote>
-<p><img src="http://7xlnl2.com1.z0.glb.clouddn.com/post23-tag_cloud4.png" alt="标签云"><br>把这里的两处<code>jekyll</code>出现位置换位对应的<code>tag</code>名称即可</p>
-</blockquote>
-<p>5、接下来大家编写自己自定义的<code>CSS</code>即可。</p>
-<p>6、目前标签页缺少分页功能，比如对所有在<code>jekyll</code>下的文章分页，问题还有待解决。</p>
-</blockquote>
-<h5 id="综上就是实现标签云的过程，如果大家有疑问或建议，欢迎讨论"><a href="#综上就是实现标签云的过程，如果大家有疑问或建议，欢迎讨论" class="headerlink" title="综上就是实现标签云的过程，如果大家有疑问或建议，欢迎讨论^_^"></a><center>综上就是实现标签云的过程，如果大家有疑问或建议，欢迎讨论^_^<img src="http://7xlnl2.com1.z0.glb.clouddn.com/post2-卖萌.jpg" alt=""></center></h5></div><div class="post-footer"><div class="meta"><div class="info"><i class="fa fa-sun-o"></i><span class="date">2015-08-29</span><i class="fa fa-comment-o"></i><a href="/2015/08/29/jekyll博客标签云tag-cloud实现/#comments">评论</a><i class="fa fa-tag"></i><a href="/categories/myshare/" title="myshare" class="tag">myshare </a><a href="/tags/jekyll/" title="jekyll" class="tag">jekyll </a></div></div></div></div><div class="share"><div class="evernote"><a href="javascript:(function(){EN_CLIP_HOST='http://www.evernote.com';try{var%20x=document.createElement('SCRIPT');x.type='text/javascript';x.src=EN_CLIP_HOST+'/public/bookmarkClipper.js?'+(new%20Date().getTime()/100000);document.getElementsByTagName('head')[0].appendChild(x);}catch(e){location.href=EN_CLIP_HOST+'/clip.action?url='+encodeURIComponent(location.href)+'&amp;title='+encodeURIComponent(document.title);}})();" ref="nofollow" target="_blank" class="fa fa-bookmark"></a></div><div class="weibo"><a href="javascript:void((function(s,d,e){try{}catch(e){}var f='http://service.weibo.com/share/share.php?',u=d.location.href,p=['url=',e(u),'&amp;title=',e(d.title),'&amp;appkey=2924220432'].join('');function a(){if(!window.open([f,p].join(''),'mb',['toolbar=0,status=0,resizable=1,width=620,height=450,left=',(s.width-620)/2,',top=',(s.height-450)/2].join('')))u.href=[f,p].join('');};if(/Firefox/.test(navigator.userAgent)){setTimeout(a,0)}else{a()}})(screen,document,encodeURIComponent));" class="fa fa-weibo"></a></div><div class="twitter"><a href="http://twitter.com/home?status=,http://blog.yinwoods.work/2015/08/29/jekyll博客标签云tag-cloud实现/,yinwoods,Jekyll博客标签云（tag_cloud）实现,;" class="fa fa-twitter"></a></div></div><div class="pagination"><ul class="clearfix"><li class="pre pagbuttons"><a role="navigation" href="/2015/09/03/python实战之爬取网站图片到本地/" title="python实战之爬取网站图片到本地" class="btn">上一篇</a></li><li class="next pagbuttons"><a role="navigation" href="/2015/08/20/重拾c/" title="重拾C++" class="btn">下一篇</a></li></ul></div><a id="comments"></a><div id="disqus_thread"></div><script>var disqus_shortname = 'yinwoods';
-var disqus_identifier = '2015/08/29/jekyll博客标签云tag-cloud实现/';
-var disqus_title = 'Jekyll博客标签云（tag_cloud）实现';
-var disqus_url = 'http://blog.yinwoods.work/2015/08/29/jekyll博客标签云tag-cloud实现/';
-(function() {
-    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
-    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
-    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
-})();</script><script id="dsq-count-scr" src="//yinwoods.disqus.com/count.js" async></script></div></div></div></div><script src="/js/jquery.js"></script><script src="/js/jquery-migrate-1.2.1.min.js"></script><script src="/js/jquery.appear.js"></script></body></html>
+block site_title
+    != page.title + " · " + config.title
+
+block description
+    - var desc = page.desc || strip_html(page.content).replace(/^\s*/, '').replace(/\s*$/, '').substring(0, 150);
+    meta(name="description", content=desc)
+
+block content
+  .autopagerize_page_element: .content: .post-page
+    include mixins
+    +make_post(page, true)
+    .share
+      .evernote
+        a.fa.fa-bookmark(href="javascript:(function(){EN_CLIP_HOST='http://www.evernote.com';try{var%20x=document.createElement('SCRIPT');x.type='text/javascript';x.src=EN_CLIP_HOST+'/public/bookmarkClipper.js?'+(new%20Date().getTime()/100000);document.getElementsByTagName('head')[0].appendChild(x);}catch(e){location.href=EN_CLIP_HOST+'/clip.action?url='+encodeURIComponent(location.href)+'&title='+encodeURIComponent(document.title);}})();", ref="nofollow", target="_blank")
+      .weibo
+        a.fa.fa-weibo(href="javascript:void((function(s,d,e){try{}catch(e){}var f='http://service.weibo.com/share/share.php?',u=d.location.href,p=['url=',e(u),'&title=',e(d.title),'&appkey=2924220432'].join('');function a(){if(!window.open([f,p].join(''),'mb',['toolbar=0,status=0,resizable=1,width=620,height=450,left=',(s.width-620)/2,',top=',(s.height-450)/2].join('')))u.href=[f,p].join('');};if(/Firefox/.test(navigator.userAgent)){setTimeout(a,0)}else{a()}})(screen,document,encodeURIComponent));")
+      .twitter
+        a.fa.fa-twitter(href=url_for("http://twitter.com/home?status="+","+config.url+"/"+page.path+","+config.title+","+page.title+",;"))
+    - var prev = page.prev ? page.prev.path : false;
+    - var next = page.next ? page.next.path : false;
+    .pagination
+      ul.clearfix
+        if prev
+          li.pre.pagbuttons
+            a.btn(role="navigation",href=url_for(prev), title=page.prev.title)!= __('prev_post')
+        if next
+          li.next.pagbuttons
+            a.btn(role="navigation",href=url_for(next), title=page.next.title)!= __('next_post')
+    if page.comments
+        include partial/comments

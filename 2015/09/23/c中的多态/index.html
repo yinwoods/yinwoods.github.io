@@ -1,106 +1,34 @@
-<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><meta name="author" content="yinwoods,yinwoods#163.com"><title>C++ 【OOP】 封装篇 · yinwoods</title><meta name="description" content="最近留校闲暇无事，又看了一些关于C++的教程，感觉收获颇丰。
-主要是关于C++中OOP机制，其实对于其他OOP语言也是适用的。
-先给大家推荐相应的教程：
+include mixins
 
-C++教程-慕课网
+extends partial/layout
 
-##OOP之封装
-对象在内存中的存储这一块真的很重要啊！！！一直想了解不同代码在内存中的存储，现在终于把它搞清楚了。（多说"><meta name="keywords" content="Hexo,Linux,Python"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="renderer" content="webkit"><link rel="short icon" href="/images/favicon.png" type="image/x-icon"><link rel="stylesheet" href="/css/style.css"><link rel="stylesheet" href="/css/blog_basic.css"><link rel="stylesheet" href="/css/font-awesome.min.css"><link rel="alternate" type="application/atom+xml" title="ATOM 1.0" href="/atom.xml"></head><body><div class="sidebar animated fadeInDown"><div class="logo-title"><div class="title"><img src="/images/logo@2x.png" style="width:127px;"><h3 title=""><a href="/">yinwoods</a></h3><div class="description"><p>To Be A Better Man!😈</p></div></div></div><ul class="social-links"><li><a href="http://weibo.com/yinwoods"><i class="fa fa-weibo"></i></a></li><li><a href="http://facebook.com/yinwoods"><i class="fa fa-facebook"></i></a></li><li><a href="http://github.com/yinwoods"><i class="fa fa-github"></i></a></li></ul><div class="footer"><a target="_blank" href="/"><span>Theme by </span></a><a href="https://www.caicai.me"> CaiCai </a><span>&</span><a href="https://github.com/Ben02/hexo-theme-Anatole"> Ben</a><div class="by_farbox"><a href="https://hexo.io/zh-cn/" target="_blank">Proudly published with Hexo&#65281;</a></div></div></div><div class="main"><div class="page-top animated fadeInDown"><div class="nav"><li><a href="/">首页</a></li><li><a href="/archives">归档</a></li><li><a href="/links">友链</a></li><li><a href="/about">关于</a></li></div><div class="information"><div class="back_btn"><li><a onclick="window.history.go(-1)" class="fa fa-chevron-left"> </a></li></div><div class="avatar"><img src="/images/favicon.png"></div></div></div><div class="autopagerize_page_element"><div class="content"><div class="post-page"><div class="post animated fadeInDown"><div class="post-title"><h3><a>C++ 【OOP】 封装篇</a></h3></div><div class="post-content"><p>最近留校闲暇无事，又看了一些关于C++的教程，感觉收获颇丰。</p>
-<p>主要是关于C++中OOP机制，其实对于其他OOP语言也是适用的。</p>
-<p>先给大家推荐相应的教程：</p>
-<ul>
-<li><a href="http://www.imooc.com/course/list?c=C+puls+puls" target="_blank" rel="external">C++教程-慕课网</a></li>
-</ul>
-<p>##OOP之封装</p>
-<h4 id="对象在内存中的存储"><a href="#对象在内存中的存储" class="headerlink" title="对象在内存中的存储"></a>对象在内存中的存储</h4><p>这一块真的很重要啊！！！一直想了解不同代码在内存中的存储，现在终于把它搞清楚了。（多说一句：北航夏令营面试的时候问的都是多态的知识。。。）</p>
-<blockquote>
-<p>内存中按照用途划分的五个区域：</p>
-<blockquote>
-<ul>
-<li><p>1、栈区：变量存储的位置；内存由系统分类、回收。</p>
-</li>
-<li><p>2、堆区：当我们new、delete一个对象时，就是在堆区进行操作。堆区的内存有程序员来申请创建、回收</p>
-</li>
-<li><p>3、全局区：存储全局变量、静态变量</p>
-</li>
-<li><p>4、常量区：存储常量</p>
-</li>
-<li><p>5、代码区：存储逻辑二进制代码</p>
-</li>
-</ul>
-</blockquote>
-</blockquote>
-<h4 id="带有初始化列表的构造函数"><a href="#带有初始化列表的构造函数" class="headerlink" title="带有初始化列表的构造函数"></a>带有初始化列表的构造函数</h4><p>因为有了封装，因此我们需要一个相对简单的方法来实现构造函数对类变量的初始化。而<code>带有初始化列表的构造函数</code>与普通构造函数的区别在于：</p>
-<blockquote>
-<ul>
-<li><p><code>带有初始化列表的构造函数</code>可以用来对<code>const</code>类型变量进行初始化</p>
-</li>
-<li><p><code>带有初始化列表的构造函数</code>相对于一般构造函数速度上要快一些</p>
-</li>
-</ul>
-</blockquote>
-<h4 id="拷贝构造函数"><a href="#拷贝构造函数" class="headerlink" title="拷贝构造函数"></a>拷贝构造函数</h4><p>拷贝构造函数作为使用拷贝赋值方式产生新对象的构造函数</p>
-<p>例如：</p>
-<p>假设我们有类Student;则如下代码使用默认构造函数对stu1进行初始化，而使用拷贝构造函数对stu2初始化。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">Student stu1;</div><div class="line"><span class="function">Student <span class="title">stu2</span><span class="params">(stu1)</span></span>;</div></pre></td></tr></table></figure>
-<p>当采用直接初始化或复制初始化时，系统自动调用拷贝构造函数。</p>
-<p>如果程序员没有定义拷贝构造函数，则当需要适用拷贝构造函数时，由系统自动生成。</p>
-<p>拷贝构造函数定义形式与一般构造函数很相似，形式如下：</p>
-<p><code>Student(const Student&amp; stu);</code></p>
-<h4 id="析构函数"><a href="#析构函数" class="headerlink" title="析构函数"></a>析构函数</h4><p>既然提到了构造函数，那么同new与delete运算符的关系一样，我们还有析构函数以供对象调用完毕后的善后工作。</p>
-<p>对于以下这个类：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Student</span> &#123;</span></div><div class="line"><span class="keyword">public</span>:</div><div class="line">        Student() &#123; m_pName = <span class="keyword">new</span> <span class="keyword">char</span>[<span class="number">20</span>]; &#125;</div><div class="line"><span class="keyword">private</span>:</div><div class="line">         <span class="keyword">char</span> *m_pName;</div><div class="line">&#125;;</div></pre></td></tr></table></figure>
-<p>析构函数的作用就在于处理对象使用结束后的善后工作，比如这里回收<code>m_pName</code>开辟的空间。</p>
-<p>如果没有自定义的析构函数，则由系统自动生成。</p>
-<p>析构函数在对象销毁时自动调用。</p>
-<p>析构函数没有返回值、没有参数，因此也不可以重载。</p>
-<p>对象的生命历程：<br><code>申请内存-&gt;初始化列表-&gt;执行构造函数-&gt;对象参与运算-&gt;执行析构函数-&gt;释放内存</code></p>
-<h4 id="类"><a href="#类" class="headerlink" title="类"></a>类</h4><p>类由成员函数、数据成员组成，可限定命名空间，确保其唯一性。</p>
-<p>类的成员函数中除析构函数外都可以重载</p>
-<p>对象的实例化可分为栈中实例化与堆中实例化</p>
-<blockquote>
-<p>前面提到过，栈中实例化即直接定义对象，而堆中实例化则是使用new操作符申请空间创建的对象实例化过程</p>
-</blockquote>
-<p>变量初始化可分为复制初始化与直接初始化，其中直接初始化是C++在C的基础上的改进</p>
-<blockquote>
-<p>复制初始化形如：<code>int x = 12;</code></p>
-<p>直接初始化形如：<code>int x(12)</code></p>
-</blockquote>
-<h4 id="引用"><a href="#引用" class="headerlink" title="引用"></a>引用</h4><p>引用可以直接理解为别名</p>
-<p>指针类型的引用，举个栗子：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">int</span> a = <span class="number">10</span>;</div><div class="line"><span class="keyword">int</span> *p = &amp;a;</div><div class="line"><span class="keyword">int</span> *&amp;q = p;</div></pre></td></tr></table></figure>
-<p>引用作为函数参数，举个栗子交换两int变量值的函数：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">fun</span><span class="params">(<span class="keyword">int</span> *a, <span class="keyword">int</span> *b)</span> </span>&#123;</div><div class="line">       <span class="keyword">int</span> c = <span class="number">0</span>;</div><div class="line">       c = *a;</div><div class="line">       *a = *b;</div><div class="line">       *b = c;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="keyword">int</span> x = <span class="number">10</span>, y = <span class="number">20</span>;</div><div class="line">fun(&amp;x, &amp;y);</div></pre></td></tr></table></figure></p>
-<p>或者：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">fun</span><span class="params">(<span class="keyword">int</span> &amp;a, <span class="keyword">int</span> &amp;b)</span> </span>&#123;</div><div class="line">       <span class="keyword">int</span> c = <span class="number">0</span>;</div><div class="line">       c = a;</div><div class="line">       a = b;</div><div class="line">       b = c;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="keyword">int</span> x = <span class="number">10</span>, y = <span class="number">20</span>;</div><div class="line">fun(x, y);</div></pre></td></tr></table></figure>
-<h4 id="C-中的内存管理"><a href="#C-中的内存管理" class="headerlink" title="C++ 中的内存管理"></a>C++ 中的内存管理</h4><p>使用<code>new</code>运算符来申请内存，使用<code>delete</code>运算符来释放一段内存。</p>
-<p>注意：</p>
-<p>申请释放<strong>一段内存</strong>形式如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">int</span> *arr = <span class="keyword">new</span> <span class="keyword">int</span>[<span class="number">10</span>];</div><div class="line"><span class="keyword">delete</span> []arr;</div></pre></td></tr></table></figure>
-<p>一般我们申请内存后需要判断是否申请成功，而释放内存后也需要把指针设为空指针</p>
-<h4 id="对象成员、深拷贝、浅拷贝与const"><a href="#对象成员、深拷贝、浅拷贝与const" class="headerlink" title="对象成员、深拷贝、浅拷贝与const"></a>对象成员、深拷贝、浅拷贝与const</h4><p>对象成员是指一个类中有其他类成员。</p>
-<p>比如我们定义了一个线段Line类，那么这个线段可以包含两个点Point类。</p>
-<p>当我们实例化对象A时，如果对象A有对象成员B，那么先执行对象B的构造函数，再执行A的构造函数。</p>
-<p>类似与FILO原则，当我们销毁对象A时，先执行对象A的析构函数，再执行B的析构函数</p>
-<p>如果对象A中有对象成员B，对象B没有默认构造函数，那么对象A必须在初始化列表中初始化对象B</p>
-<h5 id="深拷贝与浅拷贝"><a href="#深拷贝与浅拷贝" class="headerlink" title="深拷贝与浅拷贝"></a>深拷贝与浅拷贝</h5><blockquote>
-<p>对于如下例子：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Array</span> &#123;</span></div><div class="line"><span class="keyword">public</span>:</div><div class="line">    Array() &#123; m_iCount = <span class="number">5</span>; m_pArr = <span class="keyword">new</span> <span class="keyword">int</span>[m_iCount]; &#125;</div><div class="line">    Array(<span class="keyword">const</span> Array&amp; arr) &#123; m_iCount = arr.m_iCount; m_pArr = arr.m_pArr; &#125;</div><div class="line"><span class="keyword">private</span>:</div><div class="line">    <span class="keyword">int</span> m_iCount;</div><div class="line">    <span class="keyword">int</span> *m_pArr;</div><div class="line">&#125;;</div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</div><div class="line">    Array arr1;</div><div class="line">    Array arr2 = arr1;</div><div class="line">    <span class="keyword">return</span> <span class="number">0</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>这是一个浅拷贝的例子，执行代码后，对象arr1、arr2的m_pArr指向同一块内存，这就不适用于我们想要实现真正意义上的复制的情况。</p>
-<p>而深拷贝其实很简单，就是我们在拷贝函数中实现深度拷贝，栗子如下：</p>
-</blockquote>
-<p>&gt;<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Array</span> &#123;</span></div><div class="line"><span class="keyword">public</span>:</div><div class="line">    Array() &#123;m_iCount = <span class="number">5</span>;&#125;</div><div class="line">    Array(<span class="keyword">const</span> Array&amp; arr) &#123; </div><div class="line">        m_iCount = arr.m_iCount; </div><div class="line">        m_pArr = <span class="keyword">new</span> <span class="keyword">int</span>[m_iCount];</div><div class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;m_iCount; ++i) &#123;</div><div class="line">            m_pArr[i] = arr.m_pArr[i];</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"><span class="keyword">private</span>:</div><div class="line">    <span class="keyword">int</span> m_iCount;</div><div class="line">    <span class="keyword">int</span> *m_pArr;</div><div class="line">&#125;;</div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</div><div class="line">    Array arr1;</div><div class="line">    Array arr2 = arr1;</div><div class="line">    <span class="keyword">return</span> <span class="number">0</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
-<p>C++ OOP特性还可参考本站其他相关博文：</p>
-<blockquote>
-<p><a href="http://blog.yinwoods.com/coding/c-oop%E7%BB%A7%E6%89%BF%E7%AF%87.html" target="_blank" rel="external">C++ 【oop】继承篇</a></p>
-<p><a href="http://blog.yinwoods.com/coding/coop%E5%A4%9A%E6%80%81%E7%AF%87.html" target="_blank" rel="external">C++ 【oop】多态篇</a></p>
-<p><a href="http://blog.yinwoods.com/coding/coop%E6%A8%A1%E6%9D%BF%E7%AF%87.html" target="_blank" rel="external">C++ 【oop】模板篇</a></p>
-</blockquote>
-</div><div class="post-footer"><div class="meta"><div class="info"><i class="fa fa-sun-o"></i><span class="date">2015-09-23</span><i class="fa fa-comment-o"></i><a href="/2015/09/23/c中的多态/#comments">评论</a><i class="fa fa-tag"></i><a href="/categories/coding/" title="coding" class="tag">coding </a><a href="/tags/cpp/" title="cpp" class="tag">cpp </a></div></div></div></div><div class="share"><div class="evernote"><a href="javascript:(function(){EN_CLIP_HOST='http://www.evernote.com';try{var%20x=document.createElement('SCRIPT');x.type='text/javascript';x.src=EN_CLIP_HOST+'/public/bookmarkClipper.js?'+(new%20Date().getTime()/100000);document.getElementsByTagName('head')[0].appendChild(x);}catch(e){location.href=EN_CLIP_HOST+'/clip.action?url='+encodeURIComponent(location.href)+'&amp;title='+encodeURIComponent(document.title);}})();" ref="nofollow" target="_blank" class="fa fa-bookmark"></a></div><div class="weibo"><a href="javascript:void((function(s,d,e){try{}catch(e){}var f='http://service.weibo.com/share/share.php?',u=d.location.href,p=['url=',e(u),'&amp;title=',e(d.title),'&amp;appkey=2924220432'].join('');function a(){if(!window.open([f,p].join(''),'mb',['toolbar=0,status=0,resizable=1,width=620,height=450,left=',(s.width-620)/2,',top=',(s.height-450)/2].join('')))u.href=[f,p].join('');};if(/Firefox/.test(navigator.userAgent)){setTimeout(a,0)}else{a()}})(screen,document,encodeURIComponent));" class="fa fa-weibo"></a></div><div class="twitter"><a href="http://twitter.com/home?status=,http://blog.yinwoods.work/2015/09/23/c中的多态/,yinwoods,C++ 【OOP】 封装篇,;" class="fa fa-twitter"></a></div></div><div class="pagination"><ul class="clearfix"><li class="pre pagbuttons"><a role="navigation" href="/2015/10/06/c-oop继承篇/" title="C++ 【OOP】继承篇" class="btn">上一篇</a></li><li class="next pagbuttons"><a role="navigation" href="/2015/09/10/python练习册之0004-统计单词个数/" title="python练习册之【0004，0006-单词统计】" class="btn">下一篇</a></li></ul></div><a id="comments"></a><div id="disqus_thread"></div><script>var disqus_shortname = 'yinwoods';
-var disqus_identifier = '2015/09/23/c中的多态/';
-var disqus_title = 'C++ 【OOP】 封装篇';
-var disqus_url = 'http://blog.yinwoods.work/2015/09/23/c中的多态/';
-(function() {
-    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
-    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
-    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
-})();</script><script id="dsq-count-scr" src="//yinwoods.disqus.com/count.js" async></script></div></div></div></div><script src="/js/jquery.js"></script><script src="/js/jquery-migrate-1.2.1.min.js"></script><script src="/js/jquery.appear.js"></script></body></html>
+block site_title
+    != page.title + " · " + config.title
+
+block description
+    - var desc = page.desc || strip_html(page.content).replace(/^\s*/, '').replace(/\s*$/, '').substring(0, 150);
+    meta(name="description", content=desc)
+
+block content
+  .autopagerize_page_element: .content: .post-page
+    include mixins
+    +make_post(page, true)
+    .share
+      .evernote
+        a.fa.fa-bookmark(href="javascript:(function(){EN_CLIP_HOST='http://www.evernote.com';try{var%20x=document.createElement('SCRIPT');x.type='text/javascript';x.src=EN_CLIP_HOST+'/public/bookmarkClipper.js?'+(new%20Date().getTime()/100000);document.getElementsByTagName('head')[0].appendChild(x);}catch(e){location.href=EN_CLIP_HOST+'/clip.action?url='+encodeURIComponent(location.href)+'&title='+encodeURIComponent(document.title);}})();", ref="nofollow", target="_blank")
+      .weibo
+        a.fa.fa-weibo(href="javascript:void((function(s,d,e){try{}catch(e){}var f='http://service.weibo.com/share/share.php?',u=d.location.href,p=['url=',e(u),'&title=',e(d.title),'&appkey=2924220432'].join('');function a(){if(!window.open([f,p].join(''),'mb',['toolbar=0,status=0,resizable=1,width=620,height=450,left=',(s.width-620)/2,',top=',(s.height-450)/2].join('')))u.href=[f,p].join('');};if(/Firefox/.test(navigator.userAgent)){setTimeout(a,0)}else{a()}})(screen,document,encodeURIComponent));")
+      .twitter
+        a.fa.fa-twitter(href=url_for("http://twitter.com/home?status="+","+config.url+"/"+page.path+","+config.title+","+page.title+",;"))
+    - var prev = page.prev ? page.prev.path : false;
+    - var next = page.next ? page.next.path : false;
+    .pagination
+      ul.clearfix
+        if prev
+          li.pre.pagbuttons
+            a.btn(role="navigation",href=url_for(prev), title=page.prev.title)!= __('prev_post')
+        if next
+          li.next.pagbuttons
+            a.btn(role="navigation",href=url_for(next), title=page.next.title)!= __('next_post')
+    if page.comments
+        include partial/comments

@@ -1,94 +1,34 @@
-<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><meta name="author" content="yinwoods,yinwoods#163.com"><title>windows进程通信方式&消息处理机制 · yinwoods</title><meta name="description" content="窗口消息一个GUI程序必须对用户以及操作系统产生的事件有所响应。
+include mixins
 
-用户发出的事件包括所有能够与程序交互的所有方式，例如：点击鼠标、敲击键盘、触摸手写屏等等。
-操作系统发出的事件指除了用户发出事件外所有能影响程序的事件，例如：用户插入一个u盘等。
+extends partial/layout
 
-这些事件可以在程序运行期间的任意时刻以任意顺序发生"><meta name="keywords" content="Hexo,Linux,Python"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="renderer" content="webkit"><link rel="short icon" href="/images/favicon.png" type="image/x-icon"><link rel="stylesheet" href="/css/style.css"><link rel="stylesheet" href="/css/blog_basic.css"><link rel="stylesheet" href="/css/font-awesome.min.css"><link rel="alternate" type="application/atom+xml" title="ATOM 1.0" href="/atom.xml"></head><body><div class="sidebar animated fadeInDown"><div class="logo-title"><div class="title"><img src="/images/logo@2x.png" style="width:127px;"><h3 title=""><a href="/">yinwoods</a></h3><div class="description"><p>To Be A Better Man!😈</p></div></div></div><ul class="social-links"><li><a href="http://weibo.com/yinwoods"><i class="fa fa-weibo"></i></a></li><li><a href="http://facebook.com/yinwoods"><i class="fa fa-facebook"></i></a></li><li><a href="http://github.com/yinwoods"><i class="fa fa-github"></i></a></li></ul><div class="footer"><a target="_blank" href="/"><span>Theme by </span></a><a href="https://www.caicai.me"> CaiCai </a><span>&</span><a href="https://github.com/Ben02/hexo-theme-Anatole"> Ben</a><div class="by_farbox"><a href="https://hexo.io/zh-cn/" target="_blank">Proudly published with Hexo&#65281;</a></div></div></div><div class="main"><div class="page-top animated fadeInDown"><div class="nav"><li><a href="/">首页</a></li><li><a href="/archives">归档</a></li><li><a href="/links">友链</a></li><li><a href="/about">关于</a></li></div><div class="information"><div class="back_btn"><li><a onclick="window.history.go(-1)" class="fa fa-chevron-left"> </a></li></div><div class="avatar"><img src="/images/favicon.png"></div></div></div><div class="autopagerize_page_element"><div class="content"><div class="post-page"><div class="post animated fadeInDown"><div class="post-title"><h3><a>windows进程通信方式&amp;消息处理机制</a></h3></div><div class="post-content"><h3 id="窗口消息"><a href="#窗口消息" class="headerlink" title="窗口消息"></a>窗口消息</h3><p>一个GUI程序必须对用户以及操作系统产生的事件有所响应。</p>
-<blockquote>
-<p>用户发出的事件包括所有能够与程序交互的所有方式，例如：点击鼠标、敲击键盘、触摸手写屏等等。</p>
-<p>操作系统发出的事件指除了用户发出事件外所有能影响程序的事件，例如：用户插入一个u盘等。</p>
-</blockquote>
-<p>这些事件可以在程序运行期间的任意时刻以任意顺序发生，那么怎样去创建一个这样运行顺序不能被提前预测的应用程序呢？</p>
-<p>为了解决这个问题，windows使用一个消息传递模型。操作系统通过向应用程序窗口发送消息来与应用程序互动。每个消息都是一个代表指定事件的数字代码。例如用户按下鼠标左键，应用程序窗口将会收到下面这则消息代码：</p>
-<p><code>#define WM_LBUTTONDOWN 0x0201</code></p>
-<p>有些消息与窗口有数据关联。比如：<code>WM_LBUTTONDOWN</code>消息包含了光标所在位置的x、y坐标。</p>
-<p>为了把消息传递给窗口，操作系统会调用注册在这个窗口上专门处理消息的窗口过程。</p>
-<h5 id="消息循环"><a href="#消息循环" class="headerlink" title="消息循环"></a>消息循环</h5><p>一个应用程序在运行时会收到上千条消息。一个程序可以有多个窗口，每个窗口有着自己的窗口过程。那么应用程序怎样正确接收消息又怎样将消息正确地传递给窗口过程呢？应用程序需要一个循环来正确地获取消息和派发消息到正确的窗口。</p>
-<p>对创建窗口的每一个线程来说，操作系统为窗口消息创建了一个队列。这个队列保存了该线程创建的所有窗口的消息。队列对于程序来说是不可见的。你不能直接操作队列，但是你可以通过调用<code>GetMessage()</code>函数来从队列中获取一条消息。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">MSG msg;</div><div class="line">GetMessage(&amp;msg, <span class="literal">NULL</span>, <span class="number">0</span>, <span class="number">0</span>);</div></pre></td></tr></table></figure>
-<p>这个函数从队首移除消息。如果队列为空，这个函数阻塞直到另一个消息进入队列。<code>GetMessage</code>阻塞并不会导致应用程序失去响应。如果没有消息，应用程序不会做任何事情。如果需要在后台运行程序，可以在<code>GetMessage</code>等待其它消息时创建额外的线程来继续运行。</p>
-<p><code>GetMessage</code>函数的第一个参数是MSG结构体地址，如果函数成功运行，它将会利用消息相关信息补齐MSG结构体，包括目标窗口以及消息代码；其它三个参数则可以让你过滤掉从队列中获取的其它消息。大多数情况下你会令这些参数为0。</p>
-<p>虽然MSG结构体包含了消息的相关信息，你几乎不可能直接检测这个构造函数，而是将它传递给另外两个函数。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">TranslateMessage(&amp;msg);</div><div class="line">DispatchMessage(&amp;msg);</div></pre></td></tr></table></figure>
-<p><code>TranslateMessage</code>函数与键盘输入相联系，它把敲击键盘的行为解释为字符串。你并不需要知道这个函数如何运转；只需要记住在<code>DispatchMessage</code>前调用这个函数。</p>
-<p><code>DispatchMessage</code>函数告诉操作系统调用目标消息的窗口的窗口过程。换句话说，操作系统在窗口表中查找窗口句柄，找到与窗口相关的函数指针，然后调用这个函数。</p>
-<p>例如：</p>
-<p>当用户点击鼠标左键后，会引发一连串事件：</p>
-<blockquote>
-<p>1、操作系统将<code>WM_LBUTTONDOWN</code>消息加入消息队列中。</p>
-<p>2、应用程序调用<code>GetMessage</code>函数</p>
-<p>3、GetMessage从队列中获取<code>WM_LBUTTONDOWN</code>消息，并填入MSG结构体中</p>
-<p>4、应用程序调用<code>TranslateMessage</code>函数和<code>DispatchMessage</code>函数</p>
-<p>5、在<code>DispatchMessage</code>函数中，操作系统调用窗口过程</p>
-<p>6、窗口过程可以选择响应或者忽略它</p>
-</blockquote>
-<p>当窗口过程返回时，返回给<code>DispatchMessage</code>，<code>DispatchMessage</code>返回下一条消息到消息循环中。只要你的程序还在运行，消息会持续到达队列中，因此需要一个循环持续地从队列中提取信息并派发它们。你可以认为循环像下面这个工作：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">while</span> (<span class="number">1</span>)      </div><div class="line">&#123;</div><div class="line">    GetMessage(&amp;msg, <span class="literal">NULL</span>, <span class="number">0</span>,  <span class="number">0</span>);</div><div class="line">    TranslateMessage(&amp;msg); </div><div class="line">    DispatchMessage(&amp;msg);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>就像上述代码一样，这个循环是一个死循环。一般来说，<code>GetMessage</code>返回一个非零值，当你想退出应用、离开消息循环时，只需要调用<code>PostQuitMessage</code>函数即可。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">PostQuitMessage(<span class="number">0</span>);</div></pre></td></tr></table></figure>
-<p><code>PostQuitMessage</code>函数将<code>WM_QUIT</code>消息加入消息队列中。<code>WM_QUIT</code>是一个特殊的消息，它会导致<code>GetMessage</code>返回0，也就是消息循环终结，下面是修改后的消息循环：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">MSG msg = &#123;&#125;;</div><div class="line"><span class="keyword">while</span>(GetMessage(&amp;msg, <span class="literal">NULL</span>, <span class="number">0</span>, <span class="number">0</span>)) &#123;</div><div class="line">	TranslateMessage(&amp;msg);</div><div class="line">	DispatchMessage(&amp;msg);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>只要<code>GetMessage</code>返回一个非零值，while循环中的表达式便会始终为真。当你调用<code>PostQuitMessge</code>时，表达式变为假，程序退出循环。一个有趣的现象是窗口过程永远不会收到<code>WM_QUIT</code>消息，所以不需要在窗口过程中考虑这种情况。</p>
-<p>一些情况下，操作系统会绕过队列，直接调用窗口过程。</p>
-<p>区别在于术语<code>Posting</code>和<code>Sending</code>：</p>
-<blockquote>
-<p><code>Posting</code>意味着消息加入消息队列中，通过消息循环派发</p>
-<p><code>Sending</code>意味着消息跳过队列，操作系统直接调用窗口过程。</p>
-</blockquote>
-<p>暂时来说，这两者的区别并不重要，窗口过程处理所有的消息，但一些消息绕过队列，直接进入窗口过程。<br>然而如果你的应用程序在窗口间交互，这两者的区别就很大。</p>
-<h3 id="将消息写入窗口过程"><a href="#将消息写入窗口过程" class="headerlink" title="将消息写入窗口过程"></a>将消息写入窗口过程</h3><p><code>DispatchMessage</code>函数调用目标消息窗口的窗口过程。窗口过程有如下声明：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="function">LRESULT CALLBACK <span class="title">WindowProc</span><span class="params">(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)</span></span>;</div></pre></td></tr></table></figure>
-<p>这里有四个参数：</p>
-<blockquote>
-<p><code>hwnd</code>是一个窗口句柄</p>
-<p><code>uMsg</code>是消息代码；比如<code>WM_SIZE</code>表示窗口大小改变。</p>
-<p><code>wParam</code>和<code>lParam</code>包含这个消息的其他信息；所指示的意义取决于消息代码。</p>
-</blockquote>
-<p><code>LRESULT</code>是一个程序返回给windows的整数值，它包含了程序对于特定消息的响应，这个整数值所代表的意义取决于消息代码。</p>
-<p><code>CALLBACK</code>是函数的调用协定。</p>
-<p>一个典型的窗口过程是一个检测消息代码的switch语句，形式如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">switch</span>(uMSg) &#123;</div><div class="line">	<span class="keyword">case</span> WM_SIZE: <span class="comment">//Handle window resizing</span></div><div class="line">	<span class="comment">//etc</span></div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>消息所包含的多余信息保存在<code>lParam</code>和<code>wParam</code>中。这两个参数值的具体含义取决于<code>uMsg</code>，需要在MSDN上查找消息代码并作正确的数据类型转换。通常这个值要么是一个数值，要么是一个指向结构体的指针。当然，有些消息不包含任何多余的数据。</p>
-<p>举个栗子,<code>WM_SIZE</code>的文档表述为：</p>
-<blockquote>
-<p><code>wParam</code>指示窗口是最小化、最大化、还是重新设置大小。</p>
-<p><code>lParam</code>包含了用16位值表示的窗口新宽度、新高度。而16位值被存储为32位或64位形式，需要做一些位的转换操作才能得到原来的值。幸运的是，<code>WinDef.h</code>头文件包含了处理这些任务的宏命令。</p>
-</blockquote>
-<p>一个窗口过程可能会处理很多消息，这就导致它的switch代码很长。一种使代码模块化的方法是把处理不同逻辑的语句放在不同的函数中。在窗口过程中，会把<code>wParam</code>和<code>lParam</code>转换为正确的数据类型，并将对应的值传递给函数。例如，为了处理<code>WM_SIZE</code>消息，窗口过程会这么做：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line"><span class="function">LRESULT CALLBACK <span class="title">WindowProc</span><span class="params">(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)</span></span></div><div class="line">&#123;</div><div class="line">    <span class="keyword">switch</span> (uMsg)</div><div class="line">    &#123;</div><div class="line">    <span class="keyword">case</span> WM_SIZE: </div><div class="line">        &#123;</div><div class="line">            <span class="keyword">int</span> width = LOWORD(lParam);  <span class="comment">// Macro to get the low-order word.</span></div><div class="line">            <span class="keyword">int</span> height = HIWORD(lParam); <span class="comment">// Macro to get the high-order word.</span></div><div class="line"></div><div class="line">            <span class="comment">// Respond to the message:</span></div><div class="line">            OnSize(hwnd, (UINT)wParam, width, height);</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">break</span>;</div><div class="line">        </div><div class="line">    &#125;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">OnSize</span><span class="params">(HWND hwnd, UINT flag, <span class="keyword">int</span> width, <span class="keyword">int</span> height)</span></span>;</div><div class="line">&#123;</div><div class="line">    <span class="comment">// Handle resizing</span></div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p><code>LOWORD</code>和<code>HIWORD</code>宏从<code>lParam</code>中获取16位的宽度和高度。窗口过程提取宽度、高度，然后把值传递给<code>OnSize</code>函数。</p>
-<h5 id="默认的消息处理"><a href="#默认的消息处理" class="headerlink" title="默认的消息处理"></a>默认的消息处理</h5><p>如果不在窗口过程中处理一条特定的消息，把消息参数直接传递给<code>DefWindowProc</code>函数，这个函数会根据消息类型表现不同的默认消息处理行为。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">return</span> DefWindowProc(hwnd, uMsg, wParam, lParam);</div></pre></td></tr></table></figure>
-<h5 id="在窗口过程中避免瓶颈"><a href="#在窗口过程中避免瓶颈" class="headerlink" title="在窗口过程中避免瓶颈"></a>在窗口过程中避免瓶颈</h5><p>当窗口过程执行时，它会屏蔽掉该线程创建的其他窗口的所有消息。因此要避免在窗口过程中长时间处理一条消息。举个栗子，程序打开了一个TCP连接，然后无限等待服务器的响应，在这段等待的时间中，窗口将不能处理点击鼠标、敲击键盘、甚至是关闭的事件。</p>
-<p>遇到这种瓶颈时需要做的就是把任务交由其他线程来完成，可以用以下几种方式之一来完成：</p>
-<blockquote>
-<ul>
-<li><p>创建一个新线程</p>
-</li>
-<li><p>使用一个线程池</p>
-</li>
-<li><p>使用一个异步的I/O调用</p>
-</li>
-<li><p>使用异步程序调用</p>
-</li>
-</ul>
-</blockquote>
-</div><div class="post-footer"><div class="meta"><div class="info"><i class="fa fa-sun-o"></i><span class="date">2015-12-24</span><i class="fa fa-comment-o"></i><a href="/2015/12/24/windows进程通信方式消息处理机制/#comments">评论</a><i class="fa fa-tag"></i><a href="/categories/coding/" title="coding" class="tag">coding </a><a href="/tags/windows-cpp/" title="windows, cpp" class="tag">windows, cpp </a></div></div></div></div><div class="share"><div class="evernote"><a href="javascript:(function(){EN_CLIP_HOST='http://www.evernote.com';try{var%20x=document.createElement('SCRIPT');x.type='text/javascript';x.src=EN_CLIP_HOST+'/public/bookmarkClipper.js?'+(new%20Date().getTime()/100000);document.getElementsByTagName('head')[0].appendChild(x);}catch(e){location.href=EN_CLIP_HOST+'/clip.action?url='+encodeURIComponent(location.href)+'&amp;title='+encodeURIComponent(document.title);}})();" ref="nofollow" target="_blank" class="fa fa-bookmark"></a></div><div class="weibo"><a href="javascript:void((function(s,d,e){try{}catch(e){}var f='http://service.weibo.com/share/share.php?',u=d.location.href,p=['url=',e(u),'&amp;title=',e(d.title),'&amp;appkey=2924220432'].join('');function a(){if(!window.open([f,p].join(''),'mb',['toolbar=0,status=0,resizable=1,width=620,height=450,left=',(s.width-620)/2,',top=',(s.height-450)/2].join('')))u.href=[f,p].join('');};if(/Firefox/.test(navigator.userAgent)){setTimeout(a,0)}else{a()}})(screen,document,encodeURIComponent));" class="fa fa-weibo"></a></div><div class="twitter"><a href="http://twitter.com/home?status=,http://blog.yinwoods.work/2015/12/24/windows进程通信方式消息处理机制/,yinwoods,windows进程通信方式&amp;消息处理机制,;" class="fa fa-twitter"></a></div></div><div class="pagination"><ul class="clearfix"><li class="pre pagbuttons"><a role="navigation" href="/2016/01/14/Linux内核模块编程入门/" title="Linux内核模块编程入门" class="btn">上一篇</a></li><li class="next pagbuttons"><a role="navigation" href="/2015/12/23/实习面试总结以及近期规划/" title="实习面试总结以及近期规划" class="btn">下一篇</a></li></ul></div><a id="comments"></a><div id="disqus_thread"></div><script>var disqus_shortname = 'yinwoods';
-var disqus_identifier = '2015/12/24/windows进程通信方式消息处理机制/';
-var disqus_title = 'windows进程通信方式&amp;消息处理机制';
-var disqus_url = 'http://blog.yinwoods.work/2015/12/24/windows进程通信方式消息处理机制/';
-(function() {
-    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
-    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
-    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
-})();</script><script id="dsq-count-scr" src="//yinwoods.disqus.com/count.js" async></script></div></div></div></div><script src="/js/jquery.js"></script><script src="/js/jquery-migrate-1.2.1.min.js"></script><script src="/js/jquery.appear.js"></script></body></html>
+block site_title
+    != page.title + " · " + config.title
+
+block description
+    - var desc = page.desc || strip_html(page.content).replace(/^\s*/, '').replace(/\s*$/, '').substring(0, 150);
+    meta(name="description", content=desc)
+
+block content
+  .autopagerize_page_element: .content: .post-page
+    include mixins
+    +make_post(page, true)
+    .share
+      .evernote
+        a.fa.fa-bookmark(href="javascript:(function(){EN_CLIP_HOST='http://www.evernote.com';try{var%20x=document.createElement('SCRIPT');x.type='text/javascript';x.src=EN_CLIP_HOST+'/public/bookmarkClipper.js?'+(new%20Date().getTime()/100000);document.getElementsByTagName('head')[0].appendChild(x);}catch(e){location.href=EN_CLIP_HOST+'/clip.action?url='+encodeURIComponent(location.href)+'&title='+encodeURIComponent(document.title);}})();", ref="nofollow", target="_blank")
+      .weibo
+        a.fa.fa-weibo(href="javascript:void((function(s,d,e){try{}catch(e){}var f='http://service.weibo.com/share/share.php?',u=d.location.href,p=['url=',e(u),'&title=',e(d.title),'&appkey=2924220432'].join('');function a(){if(!window.open([f,p].join(''),'mb',['toolbar=0,status=0,resizable=1,width=620,height=450,left=',(s.width-620)/2,',top=',(s.height-450)/2].join('')))u.href=[f,p].join('');};if(/Firefox/.test(navigator.userAgent)){setTimeout(a,0)}else{a()}})(screen,document,encodeURIComponent));")
+      .twitter
+        a.fa.fa-twitter(href=url_for("http://twitter.com/home?status="+","+config.url+"/"+page.path+","+config.title+","+page.title+",;"))
+    - var prev = page.prev ? page.prev.path : false;
+    - var next = page.next ? page.next.path : false;
+    .pagination
+      ul.clearfix
+        if prev
+          li.pre.pagbuttons
+            a.btn(role="navigation",href=url_for(prev), title=page.prev.title)!= __('prev_post')
+        if next
+          li.next.pagbuttons
+            a.btn(role="navigation",href=url_for(next), title=page.next.title)!= __('next_post')
+    if page.comments
+        include partial/comments

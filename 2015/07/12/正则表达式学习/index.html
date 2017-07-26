@@ -1,133 +1,34 @@
-<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><meta name="author" content="yinwoods,yinwoods#163.com"><title>正则表达式学习 · yinwoods</title><meta name="description" content="学习php的过程中接触了正则表达式，想到自己封存了一个月之久的正则表达式教程也该重见天日了！
-教程地址：正则表达式30分钟入门教程
-版权声明：本文是在学习上述教程过程中编写；如有雷同，纯属学习！
+include mixins
 
-元字符
-1、\b是正则表达式规定的一个元字符，代表着单词的开头或结尾;所以我们可以通过\bhello\"><meta name="keywords" content="Hexo,Linux,Python"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="renderer" content="webkit"><link rel="short icon" href="/images/favicon.png" type="image/x-icon"><link rel="stylesheet" href="/css/style.css"><link rel="stylesheet" href="/css/blog_basic.css"><link rel="stylesheet" href="/css/font-awesome.min.css"><link rel="alternate" type="application/atom+xml" title="ATOM 1.0" href="/atom.xml"></head><body><div class="sidebar animated fadeInDown"><div class="logo-title"><div class="title"><img src="/images/logo@2x.png" style="width:127px;"><h3 title=""><a href="/">yinwoods</a></h3><div class="description"><p>To Be A Better Man!😈</p></div></div></div><ul class="social-links"><li><a href="http://weibo.com/yinwoods"><i class="fa fa-weibo"></i></a></li><li><a href="http://facebook.com/yinwoods"><i class="fa fa-facebook"></i></a></li><li><a href="http://github.com/yinwoods"><i class="fa fa-github"></i></a></li></ul><div class="footer"><a target="_blank" href="/"><span>Theme by </span></a><a href="https://www.caicai.me"> CaiCai </a><span>&</span><a href="https://github.com/Ben02/hexo-theme-Anatole"> Ben</a><div class="by_farbox"><a href="https://hexo.io/zh-cn/" target="_blank">Proudly published with Hexo&#65281;</a></div></div></div><div class="main"><div class="page-top animated fadeInDown"><div class="nav"><li><a href="/">首页</a></li><li><a href="/archives">归档</a></li><li><a href="/links">友链</a></li><li><a href="/about">关于</a></li></div><div class="information"><div class="back_btn"><li><a onclick="window.history.go(-1)" class="fa fa-chevron-left"> </a></li></div><div class="avatar"><img src="/images/favicon.png"></div></div></div><div class="autopagerize_page_element"><div class="content"><div class="post-page"><div class="post animated fadeInDown"><div class="post-title"><h3><a>正则表达式学习</a></h3></div><div class="post-content"><p>学习php的过程中接触了正则表达式，想到自己封存了一个月之久的正则表达式教程也该重见天日了！</p>
-<p>教程地址：<a href="http://deerchao.net/tutorials/regex/regex.htm" target="_blank" rel="external">正则表达式30分钟入门教程</a></p>
-<p><strong>版权声明：本文是在学习上述教程过程中编写；如有雷同，纯属学习！</strong></p>
-<blockquote>
-<h3 id="元字符"><a href="#元字符" class="headerlink" title="元字符"></a>元字符</h3><ul>
-<li><p>1、<code>\b</code>是正则表达式规定的一个元字符，代表着单词的开头或结尾;所以我们可以通过<code>\bhello\b</code>来匹配一个hello<strong>单词</strong></p>
-</li>
-<li><p>2、<code>.</code>同样是一个元字符，匹配除换行符之外的任意字符</p>
-</li>
-<li><p>3、<code>*</code>是一个元字符，它代表数量，表明<code>*</code>前字符可以出现任意次数</p>
-<blockquote>
-<p>综上  <code>\bhi\b.*\bLucy\b</code> 就是匹配先出现<strong>单词</strong> hi hi之后跟任意数量个非换行符外的其他字符，再接着是<strong>单词</strong> Lucy 的情况</p>
-</blockquote>
-</li>
-<li><p>4、<code>\d</code>是一个元字符，匹配任意一个数字；<code>\d{5}</code> 这种形式则表示匹配5个数字</p>
-</li>
-<li><p>5、<code>\s</code>是一个元字符，匹配任意空白字符，包括空格、制表符、换行符等</p>
-</li>
-<li><p>6、<code>\w</code>匹配<strong>字母、数字、下划线或汉字等</strong></p>
-<blockquote>
-<p>举几个栗子便于理解：<br>1、<code>\ba\w*\b</code>匹配以a开头的<strong>单词</strong>（这里的单词可以含下划线或汉字，取决于\w的定义）<br>2、<code>\d+</code>匹配1个或多个连续的数字； <strong>+与<code>*</code>的不同之处在于：<code>*</code>可以匹配0次或多次，而+匹配1次或多次</strong></p>
-</blockquote>
-</li>
-<li><p>7、 <code>^</code>匹配字符串的开始；<code>$</code>匹配字符串的结束； <code>^\d{5,12}$</code>就可以用来匹配5-12位的数字</p>
-</li>
-</ul>
-<h3 id="字符转义"><a href="#字符转义" class="headerlink" title="字符转义"></a>字符转义</h3><ul>
-<li>8、字符转义：如果想在字符串中匹配<code>.</code>或<code>*</code>时需要对字符进行转义，可以用’\’加元字符来进行转义；举个栗子：windows系统中<code>C:\\Windows</code>即为<code>C:\Windows</code>。</li>
-</ul>
-<h3 id="重复限定符"><a href="#重复限定符" class="headerlink" title="重复限定符"></a>重复限定符</h3><ul>
-<li>9、限定符，对于<code>&#39;*&#39;、&#39;+&#39;、&#39;?&#39;、{n}</code>均为限定符；下面给出限定符以及对应的含义<blockquote>
-<pre><code>`*：`        重复零次或更多次 
-</code></pre></blockquote>
-</li>
-</ul>
-<blockquote>
-<p>   <code>+：</code>        重复一次或更多次</p>
-<p>   <code>?：</code>        重复零次或一次</p>
-<p>   <code>{n}：</code>    重复n次</p>
-<p>   <code>{n,}：</code>    重复n次或更多次</p>
-<p>   <code>{n,m}：</code>    重复n到m次</p>
-</blockquote>
-<h3 id="字符类"><a href="#字符类" class="headerlink" title="字符类"></a>字符类</h3><ul>
-<li>10、如果想匹配没有预定义元字符的字符集合，比如<code>元音字母（a、e、i、o、u）</code>时，只需在方括号中列出来就可以了，即<code>[aeiou]</code>；<blockquote>
-<p>举个栗子：对于<code>\(?0\d{2}[) -]?\d{8}</code>，是指以<code>(</code>开头后跟零个或一个数字0，接着是两个数字，然后跟0零个或一个<code>)</code>、<code>`、</code>-<code>中的任一个，再跟8个数字；比如</code>(010)88886666<code>、</code>022-22334455`</p>
-</blockquote>
-</li>
-</ul>
-<h3 id="分支条件"><a href="#分支条件" class="headerlink" title="分支条件"></a>分支条件</h3><ul>
-<li>11、分支条件：满足几种规则中的任意一种即为匹配；判断是否满足时按照从左到右的顺序，一旦发现满足的条件即退出判断说明判断成功。<blockquote>
-<p>举个栗子：<code>\d{5}-\d{4}|\d{5}</code>即表示用连字符分隔的9位数字或5位数字；如果写成<code>\d{5}|\d{5}-\d{4}</code>则遇到形如<code>12345-6789</code>的数字串会匹配成前5个数字<code>12345</code>；说明分支条件顺序的重要性。</p>
-</blockquote>
-</li>
-</ul>
-<h3 id="分组"><a href="#分组" class="headerlink" title="分组"></a>分组</h3><ul>
-<li>12、当我们想重复单个字符时可以在这个字符后加限定符；而当我们想重复多个字符时可以使用小括号来指定<strong>分组</strong><blockquote>
-<p>举个栗子：<code>(\d{1,3}\.){3}\d{1,3}</code>表示一个简单的IP地址（不考虑某一位大于255情况），很容易看出来<code>(\d{1,3}\.){3}</code>表示三个以1-3位数字后跟 . 组成的串，后面再跟一个1-3位数字；给出一个正确的IP地址匹配正则表达式<code>((2[0-4]\d|25[0-5]|[01]?\d\d?)\.){3}(2[0-4]\d|25[0-5]|[01]?\d\d?)</code>相信看官认真看时可以看懂的…</p>
-</blockquote>
-</li>
-</ul>
-<h3 id="反义"><a href="#反义" class="headerlink" title="反义"></a>反义</h3><ul>
-<li>13、反义：查找除某些字符外的其他字符；只需把之前讲的几个元字符改为大写即可；比如：<blockquote>
-<p><code>\W</code>匹配<code>任意不是字母、数字、下划线或汉字的字符</code>；<br><code>\S</code> 匹配 <code>任意不是空白符的字符</code><br><code>\D</code> 匹配 <code>任意非数字的字符</code><br><code>\B</code> 匹配 <code>不是单词开始或结束的位置</code><br><code>[^x]</code>匹配 <code>除x以外的任意字符</code><br><code>[^aeiou]</code> 匹配 <code>除a e i o u以外的任意字符</code></p>
-</blockquote>
-</li>
-</ul>
-<h3 id="后向引用"><a href="#后向引用" class="headerlink" title="后向引用"></a>后向引用</h3><ul>
-<li><p>14、后向引用；前面讲过用小括号进行分组，其实正则表达式会默认对分组从左向右进行编号；分组0对应整个正则表达式；后向引用用于重复搜索前面某个分组匹配的文本；</p>
-<blockquote>
-<p>举个栗子：<code>\b(\w+)\b\s+\1\b</code>用于匹配重复的单词，形如<code>ha ha</code>、<code>he he</code>等；其中<code>\b(\w+)\b</code>用于匹配一个单词（并非严格意义的单词，用<code>word</code>形容更贴切）；这个单词作为一个分组会被编号为1；因此<code>\s+\1\b</code>是指多个空白符后跟上一步匹配的单词</p>
-</blockquote>
-<p>   也可以自己指定分组名，使用<code>(?&lt;word&gt;\w+)</code>或<code>(?&#39;word&#39;\w+)</code>就可以把<code>\w+</code>组名指定为word了；当需要后向引用这个分组时可以使用<code>\k&lt;word&gt;</code>引用<br>  后向引用还有更复杂的操作，这里就不再枚举了，有兴趣的朋友可以访问教程源地址进行深入了解</p>
-</li>
-</ul>
-<h3 id="零宽断言"><a href="#零宽断言" class="headerlink" title="零宽断言"></a>零宽断言</h3><ul>
-<li>15、零宽断言：用于查找某些特定位置的内容；</li>
-</ul>
-<blockquote>
-<ul>
-<li><p><code>(?=exp)</code>也叫<strong>零宽度正预测先行断言</strong>；它匹配自身出现位置后的表达式exp；比如<code>\b\w+(?=ing\b)</code>匹配以ing结尾单词的前面部分。对于<code>I&#39;m singing while you&#39;re dancing</code>会匹配<code>sing</code>和<code>danc</code></p>
-</li>
-<li><p><code>(?&lt;=exp)</code>也叫<strong>零宽度正回顾后发断言</strong>；它匹配自身出现位置前的表达式exp；比如<code>(?&lt;=\bre)\w+\b</code>匹配以re开头单词的后面部分。对于<code>I&#39;m reading a novel</code>会匹配<code>ading</code></p>
-</li>
-</ul>
-<blockquote>
-<p>举个栗子：<code>(?&lt;=\s)\d+(?=\s)</code>匹配以空白符间隔的数字</p>
-</blockquote>
-</blockquote>
-<h3 id="零宽度负预测先行断言"><a href="#零宽度负预测先行断言" class="headerlink" title="零宽度负预测先行断言"></a>零宽度负预测先行断言</h3><ul>
-<li>16、先看一个栗子：我们现在相匹配一个含有字母q，且q后面不跟u的单词；使用：<code>\b\w*q[^u]\w*\b</code>很容易理解是匹配一个q后面不是u的单词；但这里有个问题就是[^u]是指匹配不是u的任意字符（也就是说一定要匹配一个字符），那么这个正则表达式就与我们的出发点不一致了（因为p如果在单词的最后一位，可能会导致匹配两个单词；比如会匹配<code>Iraq fighting</code>）；</li>
-</ul>
-<blockquote>
-<p>这个时候我们就需要使用<strong>零宽度负预测先行断言(?!exp)</strong>了，意思是<code>匹配后面不是exp的结果</code>；对于<code>\d{3}(?!\d)</code>即匹配一个三位数字，且这三位数字后不跟数字</p>
-<p>同上还有一个<strong>零宽度负回顾后发断言(?&lt;!exp)</strong>来<code>匹配前面不是exp的结果</code>；比如<code>(?&lt;[a-z])\d{7}</code>匹配前面不是小写字母的七个数字</p>
-<p>举一个重要的栗子：<code>(?&lt;=&lt;(\w+)&gt;).*(?=&lt;\/\1&gt;)</code>用于匹配不含属性的简单HTML标签内的内容</p>
-</blockquote>
-<h3 id="注释"><a href="#注释" class="headerlink" title="注释"></a>注释</h3><ul>
-<li>17、可以通过语法<code>(?#comment)</code>来包含注释</li>
-</ul>
-<h3 id="贪婪与懒惰"><a href="#贪婪与懒惰" class="headerlink" title="贪婪与懒惰"></a>贪婪与懒惰</h3><ul>
-<li>18、当正则表达式中包含能接受重复的限定符时，默认时匹配尽可能多的字符，如<code>a.*b</code>对于<code>aabab</code>会匹配<code>aabab</code>而不是<code>ab</code>或<code>abab</code>； 我们称这种匹配方式为<strong>贪婪匹配</strong></li>
-</ul>
-<p>与之对应的就是<strong>懒惰匹配</strong>会匹配尽可能少的字符；把贪婪匹配转为懒惰匹配的方法就是在对应限定符后加<code>？</code></p>
-<blockquote>
-<h4 id="懒惰限定符"><a href="#懒惰限定符" class="headerlink" title="懒惰限定符"></a>懒惰限定符</h4><p><code>*?</code>    ： <code>重复任意次，但尽可能少重复</code></p>
-<p><code>+?</code>    ： <code>重复1次或更多次，但尽可能少重复</code></p>
-<p><code>??</code>    ：<code>重复0次或1次，但尽可能少重复</code></p>
-<p><code>{n,m}?</code>    ： <code>重复n到m次，但尽可能少重复</code></p>
-<p><code>{n,}?</code>    ： <code>重复n次以上，但尽可能少重复</code></p>
-<ul>
-<li></li>
-</ul>
-</blockquote>
-</blockquote>
-<p>#写在最后</p>
-<blockquote>
-<p>还有一部分内容没有涉及，原因是太复杂了且不常用，现在学习了不用也会很快忘记，所以我选择在需要的时候再去学习吧！</p>
-<p>正则表达式的学习到这里就告一段落了！</p>
-</blockquote>
-</div><div class="post-footer"><div class="meta"><div class="info"><i class="fa fa-sun-o"></i><span class="date">2015-07-12</span><i class="fa fa-comment-o"></i><a href="/2015/07/12/正则表达式学习/#comments">评论</a><i class="fa fa-tag"></i><a href="/categories/coding/" title="coding" class="tag">coding </a><a href="/tags/tools/" title="tools" class="tag">tools </a></div></div></div></div><div class="share"><div class="evernote"><a href="javascript:(function(){EN_CLIP_HOST='http://www.evernote.com';try{var%20x=document.createElement('SCRIPT');x.type='text/javascript';x.src=EN_CLIP_HOST+'/public/bookmarkClipper.js?'+(new%20Date().getTime()/100000);document.getElementsByTagName('head')[0].appendChild(x);}catch(e){location.href=EN_CLIP_HOST+'/clip.action?url='+encodeURIComponent(location.href)+'&amp;title='+encodeURIComponent(document.title);}})();" ref="nofollow" target="_blank" class="fa fa-bookmark"></a></div><div class="weibo"><a href="javascript:void((function(s,d,e){try{}catch(e){}var f='http://service.weibo.com/share/share.php?',u=d.location.href,p=['url=',e(u),'&amp;title=',e(d.title),'&amp;appkey=2924220432'].join('');function a(){if(!window.open([f,p].join(''),'mb',['toolbar=0,status=0,resizable=1,width=620,height=450,left=',(s.width-620)/2,',top=',(s.height-450)/2].join('')))u.href=[f,p].join('');};if(/Firefox/.test(navigator.userAgent)){setTimeout(a,0)}else{a()}})(screen,document,encodeURIComponent));" class="fa fa-weibo"></a></div><div class="twitter"><a href="http://twitter.com/home?status=,http://blog.yinwoods.work/2015/07/12/正则表达式学习/,yinwoods,正则表达式学习,;" class="fa fa-twitter"></a></div></div><div class="pagination"><ul class="clearfix"><li class="pre pagbuttons"><a role="navigation" href="/2015/07/24/leetcode-235-lowest-common-ancestor-of-a-binary-search-tree数据结构/" title="LeetCode 235（数据结构）" class="btn">上一篇</a></li><li class="next pagbuttons"><a role="navigation" href="/2015/07/11/php--mysql-实现分页功能/" title="php + mysql 实现分页" class="btn">下一篇</a></li></ul></div><a id="comments"></a><div id="disqus_thread"></div><script>var disqus_shortname = 'yinwoods';
-var disqus_identifier = '2015/07/12/正则表达式学习/';
-var disqus_title = '正则表达式学习';
-var disqus_url = 'http://blog.yinwoods.work/2015/07/12/正则表达式学习/';
-(function() {
-    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
-    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
-    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
-})();</script><script id="dsq-count-scr" src="//yinwoods.disqus.com/count.js" async></script></div></div></div></div><script src="/js/jquery.js"></script><script src="/js/jquery-migrate-1.2.1.min.js"></script><script src="/js/jquery.appear.js"></script></body></html>
+extends partial/layout
+
+block site_title
+    != page.title + " · " + config.title
+
+block description
+    - var desc = page.desc || strip_html(page.content).replace(/^\s*/, '').replace(/\s*$/, '').substring(0, 150);
+    meta(name="description", content=desc)
+
+block content
+  .autopagerize_page_element: .content: .post-page
+    include mixins
+    +make_post(page, true)
+    .share
+      .evernote
+        a.fa.fa-bookmark(href="javascript:(function(){EN_CLIP_HOST='http://www.evernote.com';try{var%20x=document.createElement('SCRIPT');x.type='text/javascript';x.src=EN_CLIP_HOST+'/public/bookmarkClipper.js?'+(new%20Date().getTime()/100000);document.getElementsByTagName('head')[0].appendChild(x);}catch(e){location.href=EN_CLIP_HOST+'/clip.action?url='+encodeURIComponent(location.href)+'&title='+encodeURIComponent(document.title);}})();", ref="nofollow", target="_blank")
+      .weibo
+        a.fa.fa-weibo(href="javascript:void((function(s,d,e){try{}catch(e){}var f='http://service.weibo.com/share/share.php?',u=d.location.href,p=['url=',e(u),'&title=',e(d.title),'&appkey=2924220432'].join('');function a(){if(!window.open([f,p].join(''),'mb',['toolbar=0,status=0,resizable=1,width=620,height=450,left=',(s.width-620)/2,',top=',(s.height-450)/2].join('')))u.href=[f,p].join('');};if(/Firefox/.test(navigator.userAgent)){setTimeout(a,0)}else{a()}})(screen,document,encodeURIComponent));")
+      .twitter
+        a.fa.fa-twitter(href=url_for("http://twitter.com/home?status="+","+config.url+"/"+page.path+","+config.title+","+page.title+",;"))
+    - var prev = page.prev ? page.prev.path : false;
+    - var next = page.next ? page.next.path : false;
+    .pagination
+      ul.clearfix
+        if prev
+          li.pre.pagbuttons
+            a.btn(role="navigation",href=url_for(prev), title=page.prev.title)!= __('prev_post')
+        if next
+          li.next.pagbuttons
+            a.btn(role="navigation",href=url_for(next), title=page.next.title)!= __('next_post')
+    if page.comments
+        include partial/comments
