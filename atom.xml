@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://blog.yinwoods.work/"/>
-  <updated>2017-11-16T07:41:50.624Z</updated>
+  <updated>2017-11-16T07:45:10.954Z</updated>
   <id>http://blog.yinwoods.work/</id>
   
   <author>
@@ -17,10 +17,10 @@
   
   <entry>
     <title>AWS上kafka端口开放外网访问问题解决方法</title>
-    <link href="http://blog.yinwoods.work/2017/08/22/AWS%E4%B8%8AKafka%E7%AB%AF%E5%8F%A3%E5%A4%96%E7%BD%91%E5%BC%80%E6%94%BE%E9%97%AE%E9%A2%98%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95/"/>
-    <id>http://blog.yinwoods.work/2017/08/22/AWS上Kafka端口外网开放问题解决方法/</id>
-    <published>2017-08-22T14:23:00.000Z</published>
-    <updated>2017-11-16T07:41:50.624Z</updated>
+    <link href="http://blog.yinwoods.work/2017/11/15/AWS%E4%B8%8AKafka%E7%AB%AF%E5%8F%A3%E5%A4%96%E7%BD%91%E5%BC%80%E6%94%BE%E9%97%AE%E9%A2%98%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95/"/>
+    <id>http://blog.yinwoods.work/2017/11/15/AWS上Kafka端口外网开放问题解决方法/</id>
+    <published>2017-11-15T14:23:00.000Z</published>
+    <updated>2017-11-16T07:45:10.954Z</updated>
     
     <content type="html"><![CDATA[<p>目前公司采用ELK来存放以及利用日志，采用filebeat将日志发送至Kafka，之后再写一个python脚本作为消费者把Kafka内的日志拉取下来并打入到elasticsearch中，供后期查询检索使用。</p>
 <p>本来这是一套比较完备的流程，但由于最近接了新的业务，而新产生的日志在对方的机器上，也就是说我们需要把Kafka端口开放至公网，供外部机器写入消息；</p>
@@ -55,10 +55,10 @@
     
     </summary>
     
-      <category term="coding, kafka" scheme="http://blog.yinwoods.work/categories/coding-kafka/"/>
+      <category term="coding" scheme="http://blog.yinwoods.work/categories/coding/"/>
     
     
-      <category term="druid" scheme="http://blog.yinwoods.work/tags/druid/"/>
+      <category term="kafka aws" scheme="http://blog.yinwoods.work/tags/kafka-aws/"/>
     
   </entry>
   
@@ -611,6 +611,48 @@
   </entry>
   
   <entry>
+    <title>首尾指针法</title>
+    <link href="http://blog.yinwoods.work/2016/10/16/%E9%A6%96%E5%B0%BE%E6%8C%87%E9%92%88%E6%B3%95/"/>
+    <id>http://blog.yinwoods.work/2016/10/16/首尾指针法/</id>
+    <published>2016-10-15T16:00:00.000Z</published>
+    <updated>2017-07-26T10:06:54.000Z</updated>
+    
+    <content type="html"><![CDATA[<p>首尾指针法多应用于在已排序的数组中实现O(N)的查找。</p>
+<p>例如：给定一个整数k，对于两个递增数组，找到(i, j)使得 a 中的 i 位置与 b 中的 j 位置满足 a[i] + b[j] = k。<br>对于这种问题，我们往往可以取 a 中的第i位及 b 中第j位，依次相加并根据相加结果与数值 k 的大小来决定i, j的移动方向。</p>
+<p>具体代码如下：</p>
+<pre><code>#!CPP
+while (i &lt; a.size()) {
+    while(a[i] + b[j] &gt; X &amp;&amp; j &gt; 0) j--;
+    if (a[i] + b[j] == X) writeAnswer(i, j);
+    i++;
+}
+</code></pre><p>问题变形：</p>
+<p>1、对于无重复元素的数组 a，问存在多少种三个数相加，和为定值k的情况。</p>
+<blockquote>
+<p>解答：先对数组排序，外部循环遍历a，并在循环内部找a[p] + a[q] = k - a[i]的情况。其中 p,q 的寻找即利用首尾指针法。</p>
+</blockquote>
+<p>2、对于无重复元素的数组 a，问存在多少种两个数相减，和为定值k的情况。</p>
+<blockquote>
+<p>解答：先对数组排序，外部循环遍历a，判断a[i] + k是否在数组a中即可，判断可以利用set来实现log(N)的时间复杂度，因此该算法的时间复杂度为O(NlogN)。</p>
+<p>解答： 更高效的方法是取i = 0, j = 1, 当 a[j] - a[i] &gt; k 时，++i；当a[j] - a[i] &lt; k时，++j;</p>
+</blockquote>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;首尾指针法多应用于在已排序的数组中实现O(N)的查找。&lt;/p&gt;
+&lt;p&gt;例如：给定一个整数k，对于两个递增数组，找到(i, j)使得 a 中的 i 位置与 b 中的 j 位置满足 a[i] + b[j] = k。&lt;br&gt;对于这种问题，我们往往可以取 a 中的第i位及 b 中第
+    
+    </summary>
+    
+      <category term="coding" scheme="http://blog.yinwoods.work/categories/coding/"/>
+    
+    
+      <category term="algorithm" scheme="http://blog.yinwoods.work/tags/algorithm/"/>
+    
+  </entry>
+  
+  <entry>
     <title>后缀数组(suffix Array)学习</title>
     <link href="http://blog.yinwoods.work/2016/10/16/%E5%90%8E%E7%BC%80%E6%95%B0%E7%BB%84%E5%AD%A6%E4%B9%A0/"/>
     <id>http://blog.yinwoods.work/2016/10/16/后缀数组学习/</id>
@@ -659,48 +701,6 @@
     
     
       <category term="algorithm, data structure" scheme="http://blog.yinwoods.work/tags/algorithm-data-structure/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>首尾指针法</title>
-    <link href="http://blog.yinwoods.work/2016/10/16/%E9%A6%96%E5%B0%BE%E6%8C%87%E9%92%88%E6%B3%95/"/>
-    <id>http://blog.yinwoods.work/2016/10/16/首尾指针法/</id>
-    <published>2016-10-15T16:00:00.000Z</published>
-    <updated>2017-07-26T10:06:54.000Z</updated>
-    
-    <content type="html"><![CDATA[<p>首尾指针法多应用于在已排序的数组中实现O(N)的查找。</p>
-<p>例如：给定一个整数k，对于两个递增数组，找到(i, j)使得 a 中的 i 位置与 b 中的 j 位置满足 a[i] + b[j] = k。<br>对于这种问题，我们往往可以取 a 中的第i位及 b 中第j位，依次相加并根据相加结果与数值 k 的大小来决定i, j的移动方向。</p>
-<p>具体代码如下：</p>
-<pre><code>#!CPP
-while (i &lt; a.size()) {
-    while(a[i] + b[j] &gt; X &amp;&amp; j &gt; 0) j--;
-    if (a[i] + b[j] == X) writeAnswer(i, j);
-    i++;
-}
-</code></pre><p>问题变形：</p>
-<p>1、对于无重复元素的数组 a，问存在多少种三个数相加，和为定值k的情况。</p>
-<blockquote>
-<p>解答：先对数组排序，外部循环遍历a，并在循环内部找a[p] + a[q] = k - a[i]的情况。其中 p,q 的寻找即利用首尾指针法。</p>
-</blockquote>
-<p>2、对于无重复元素的数组 a，问存在多少种两个数相减，和为定值k的情况。</p>
-<blockquote>
-<p>解答：先对数组排序，外部循环遍历a，判断a[i] + k是否在数组a中即可，判断可以利用set来实现log(N)的时间复杂度，因此该算法的时间复杂度为O(NlogN)。</p>
-<p>解答： 更高效的方法是取i = 0, j = 1, 当 a[j] - a[i] &gt; k 时，++i；当a[j] - a[i] &lt; k时，++j;</p>
-</blockquote>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;p&gt;首尾指针法多应用于在已排序的数组中实现O(N)的查找。&lt;/p&gt;
-&lt;p&gt;例如：给定一个整数k，对于两个递增数组，找到(i, j)使得 a 中的 i 位置与 b 中的 j 位置满足 a[i] + b[j] = k。&lt;br&gt;对于这种问题，我们往往可以取 a 中的第i位及 b 中第
-    
-    </summary>
-    
-      <category term="coding" scheme="http://blog.yinwoods.work/categories/coding/"/>
-    
-    
-      <category term="algorithm" scheme="http://blog.yinwoods.work/tags/algorithm/"/>
     
   </entry>
   
