@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://blog.yinwoods.work/"/>
-  <updated>2017-11-16T07:45:10.954Z</updated>
+  <updated>2017-12-30T06:54:42.677Z</updated>
   <id>http://blog.yinwoods.work/</id>
   
   <author>
@@ -14,6 +14,38 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>配置不同局域网ssh互联</title>
+    <link href="http://blog.yinwoods.work/2017/12/30/%E9%85%8D%E7%BD%AE%E4%B8%8D%E5%90%8C%E5%B1%80%E5%9F%9F%E7%BD%91ssh%E4%BA%92%E8%81%94/"/>
+    <id>http://blog.yinwoods.work/2017/12/30/配置不同局域网ssh互联/</id>
+    <published>2017-12-30T06:54:00.000Z</published>
+    <updated>2017-12-30T06:54:42.677Z</updated>
+    
+    <content type="html"><![CDATA[<p>最近新向实验室申请了三台服务器用于做毕业设计，但是因为不常在实验室，所以想到有没有一个好的方法能够做到即使不在实验室的局域网中也能够ssh到实验室的机器。也就是说做到从一个局域网中的A机器ssh至另一个局域网中的B机器。</p>
+<p>其实大概想一下，就知道完全是可行的，毕竟A与B都联网了，没道理联网的机器却无法互相通信。但也很容易想到存在的限制，就是我怎么拿到B的唯一ID，以此来与它建立通信呢？一般情况下我们ssh用的是域名或者公网IP（归根结底就是公网IP），由此想到能否利用一台具备公网IP的机器C作为两个局域网AB之间的跳板机呢？</p>
+<p>看了下ssh命令，发现是可以的，不需要安装其他软件，仅借助ssh即可实现。</p>
+<p>在机器B上执行</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">ssh -fCNR &lt;port1&gt;:localhost:22 username@C</div></pre></td></tr></table></figure>
+<p>命令的意思是在C上做端口转发，将C机器的port1端口转发到B机器的22端口（22是sshd的默认端口）</p>
+<p>这样一来，我们就能够做到使用A ssh连入C，再执行</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">ssh -p port1 localhost</div></pre></td></tr></table></figure>
+<p>即可ssh连入B</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;最近新向实验室申请了三台服务器用于做毕业设计，但是因为不常在实验室，所以想到有没有一个好的方法能够做到即使不在实验室的局域网中也能够ssh到实验室的机器。也就是说做到从一个局域网中的A机器ssh至另一个局域网中的B机器。&lt;/p&gt;
+&lt;p&gt;其实大概想一下，就知道完全是可行的，毕
+    
+    </summary>
+    
+      <category term="coding" scheme="http://blog.yinwoods.work/categories/coding/"/>
+    
+    
+      <category term="ssh 端口转发" scheme="http://blog.yinwoods.work/tags/ssh-%E7%AB%AF%E5%8F%A3%E8%BD%AC%E5%8F%91/"/>
+    
+  </entry>
   
   <entry>
     <title>AWS上kafka端口开放外网访问问题解决方法</title>
@@ -1083,126 +1115,6 @@ end. 400 times is more than enough. --><br>‘’’</p>
     
     
       <category term="python, 爬虫" scheme="http://blog.yinwoods.work/tags/python-%E7%88%AC%E8%99%AB/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>基础排序算法总结</title>
-    <link href="http://blog.yinwoods.work/2016/01/30/%E5%9F%BA%E7%A1%80%E6%8E%92%E5%BA%8F%E7%AE%97%E6%B3%95%E6%80%BB%E7%BB%93/"/>
-    <id>http://blog.yinwoods.work/2016/01/30/基础排序算法总结/</id>
-    <published>2016-01-29T16:00:00.000Z</published>
-    <updated>2017-07-26T10:06:54.000Z</updated>
-    
-    <content type="html"><![CDATA[<p>该篇博客介绍的经典算法有：冒泡排序、选择排序、插入排序、希尔排序、归并排序、快速排序</p>
-<h3 id="冒泡排序-Bubble-Sort"><a href="#冒泡排序-Bubble-Sort" class="headerlink" title="冒泡排序 Bubble Sort"></a>冒泡排序 Bubble Sort</h3><p>概念：依次比较相邻两个元素的大小，这样一轮比较下来就可以得出当前轮的最值。</p>
-<p>步骤：</p>
-<blockquote>
-<p>1、比较相邻的两个元素</p>
-<p>2、若左侧元素值较大，则交换位置</p>
-<p>3、第i轮比较范围为[0,n-i]，得到第i大元素</p>
-<p>4、到没有交换时即说明排序完成</p>
-</blockquote>
-<p>代码：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">bubble_sort</span><span class="params">(<span class="keyword">int</span> a[], <span class="keyword">int</span> n)</span> </span>&#123;</div><div class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;n; ++i) &#123;</div><div class="line">    	<span class="keyword">for</span>(<span class="keyword">int</span> j=<span class="number">1</span>; j&lt;n-i; ++j) &#123;</div><div class="line">    		<span class="keyword">if</span>(a[j] &lt; a[j<span class="number">-1</span>]) &#123;</div><div class="line">    			swap(a[j], a[j<span class="number">-1</span>]);</div><div class="line">    		&#125;</div><div class="line">    	&#125;</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">return</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>复杂度：</p>
-<blockquote>
-<ul>
-<li><p>最差时间复杂度：O(n^2)</p>
-</li>
-<li><p>最佳时间复杂度：O(n)[需在原代码基础上加标志位优化，见下文]</p>
-</li>
-<li><p>平均时间复杂度：O(n^2)</p>
-</li>
-</ul>
-</blockquote>
-<p>优化：</p>
-<blockquote>
-<p>1、添加标志位，当序列有序时，停止冒泡；时间复杂度提升至O(n)</p>
-<p>2、减少遍历次数，对已经有序的部分不再遍历</p>
-</blockquote>
-<p>拓展：</p>
-<p>鸡尾酒排序：对冒泡排序进行改进，每次先从低到高遍历，再从高到低遍历，即来回遍历。性能上要比冒泡排序好一些。</p>
-<pre><code>代码：
-</code></pre><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">cocktail_sort</span><span class="params">(<span class="keyword">int</span> arr[], <span class="keyword">int</span> len)</span> </span>&#123;</div><div class="line">    <span class="keyword">int</span> left = <span class="number">0</span>;</div><div class="line">    <span class="keyword">int</span> right = len<span class="number">-1</span>;</div><div class="line">    <span class="keyword">bool</span> swapped = <span class="literal">true</span>;<span class="comment">//标志是否已经还需要排序</span></div><div class="line">    <span class="keyword">while</span>(swapped) &#123;</div><div class="line">        swapped = <span class="literal">false</span>;</div><div class="line">    	<span class="keyword">for</span>(i=left; i&lt;right; ++i) &#123;</div><div class="line">    		<span class="keyword">if</span>(arr[i] &gt; arr[i+<span class="number">1</span>]) &#123;</div><div class="line">    			swap(arr[i], arr[i+<span class="number">1</span>]);</div><div class="line">    			swapped = <span class="literal">true</span>;</div><div class="line">    		&#125;</div><div class="line">    	&#125;</div><div class="line">    	</div><div class="line">    	--right;</div><div class="line">    	</div><div class="line">    	<span class="keyword">for</span>(i=right; i&gt;left; --i) &#123;</div><div class="line">    		<span class="keyword">if</span>(arr[i] &lt; arr[i<span class="number">-1</span>]) &#123;</div><div class="line">    			swap(arr[i], arr[i<span class="number">-1</span>]);</div><div class="line">    			swapped = <span class="literal">true</span>;</div><div class="line">    		&#125;</div><div class="line">    	&#125;</div><div class="line">    	</div><div class="line">    	++left;</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">return</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<h3 id="选择排序"><a href="#选择排序" class="headerlink" title="选择排序"></a>选择排序</h3><p>概念：每次从未排序部分中找出最小值，放在已排序部分后面。</p>
-<p>步骤：</p>
-<blockquote>
-<p>1、在未排序部分找出最小值，放在已排序部分后面</p>
-<p>2、重复1的操作直到全部排好序</p>
-</blockquote>
-<p>源代码：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">select_sort</span><span class="params">(<span class="keyword">int</span> a[], <span class="keyword">int</span> n)</span> </span>&#123;</div><div class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;n; ++i) &#123;</div><div class="line">        <span class="keyword">int</span> min = i;</div><div class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> j=i+<span class="number">1</span>; j&lt;n; ++j) &#123;</div><div class="line">            <span class="keyword">if</span>(a[min] &gt; a[j])</div><div class="line">                min = j;</div><div class="line">        &#125;</div><div class="line">        swap(a[i], a[min]);</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>复杂度：</p>
-<blockquote>
-<ul>
-<li><p>最差时间复杂度：O(n^2)</p>
-</li>
-<li><p>最佳时间复杂度：O(n^2)</p>
-</li>
-<li><p>平均时间复杂度：O(n^2)</p>
-</li>
-</ul>
-</blockquote>
-<h3 id="插入排序"><a href="#插入排序" class="headerlink" title="插入排序"></a>插入排序</h3><p>概念：对于每个未排序数据，扫描已排序数组，并插入到合适的位置。</p>
-<p>步骤：</p>
-<blockquote>
-<p>1、第一个元素认为已排序</p>
-<p>2、之后每取出一个元素，插入到已排序数组的合适位置</p>
-</blockquote>
-<p>源代码：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">insert_sort</span><span class="params">(<span class="keyword">int</span> a[], <span class="keyword">int</span> n)</span> </span>&#123;</div><div class="line">    <span class="keyword">int</span> j;</div><div class="line">	<span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">1</span>; i&lt;n; ++i) &#123;<span class="comment">//待排序部分</span></div><div class="line">	    <span class="keyword">int</span> tmp = a[i];</div><div class="line">	    <span class="keyword">for</span>(j=i<span class="number">-1</span>; j&gt;=<span class="number">0</span>&amp;&amp;a[j]&gt;tmp; --j) &#123;<span class="comment">//已排序部分</span></div><div class="line">	        a[j+<span class="number">1</span>] = a[j];</div><div class="line">	    &#125;</div><div class="line">	    a[j+<span class="number">1</span>] = tmp;</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>复杂度：</p>
-<blockquote>
-<p>最差时间复杂度：O(n^2)</p>
-<p>最佳时间复杂度：O(n)</p>
-<p>平均时间复杂度：O(n^2)</p>
-</blockquote>
-<p>优化：</p>
-<pre><code>1、如果数组范围较大，可采用二分查找，找到第一个比a[i]大的位置再insert即可
-</code></pre><h3 id="希尔排序"><a href="#希尔排序" class="headerlink" title="希尔排序"></a>希尔排序</h3><p>概念：是对插入排序的高效改进，将序列每次按不同步长划分，再对每列进行插入排序，是非稳定算法</p>
-<p>步骤：每次按不同的步长对数组进行划分行，再对每列进行插入排序，改变步长重复上面的操作，直到步长为1，即得到完全有序的数组</p>
-<p>源代码：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">shell_sort</span><span class="params">(<span class="keyword">int</span> a[], <span class="keyword">int</span> n)</span> </span>&#123;</div><div class="line">    <span class="keyword">int</span> j;</div><div class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> gap = n&gt;&gt;<span class="number">1</span>; gap &gt; <span class="number">0</span>; gap &gt;&gt;= <span class="number">1</span>) &#123;</div><div class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> i=gap; i&lt;n; ++i) &#123;<span class="comment">//未排序部分</span></div><div class="line">            <span class="keyword">int</span> tmp = a[i];</div><div class="line">            <span class="keyword">for</span>(j = i-gap; j&gt;<span class="number">0</span>&amp;&amp;a[j]&gt;tmp; j-=gap) &#123;<span class="comment">//已排序部分</span></div><div class="line">                a[j+gap] = a[j];  </div><div class="line">            &#125;</div><div class="line">            a[j+gap] = tmp;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>复杂度：</p>
-<pre><code>复杂度取决于步长的选择。
-</code></pre><h3 id="归并排序"><a href="#归并排序" class="headerlink" title="归并排序"></a>归并排序</h3><p>概念：采用分治法实现，将数组先分解再合并的过程中做到排序</p>
-<p>步骤：将数组递归地分为left、right两部分，当left、right分别有序后再合并left、right即可得到排序后的数组。</p>
-<p>源代码：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">merge_sort</span><span class="params">(<span class="keyword">int</span> arr[], <span class="keyword">int</span> n)</span> </span>&#123;</div><div class="line">    <span class="keyword">int</span> *a = arr;</div><div class="line">    <span class="keyword">int</span> *b = (<span class="keyword">int</span>*)<span class="built_in">malloc</span>(n*<span class="keyword">sizeof</span>(<span class="keyword">int</span>*));</div><div class="line">    <span class="keyword">int</span> seg, start;</div><div class="line">    <span class="keyword">for</span>(seg = <span class="number">1</span>; seg &lt; n; seg += seg) &#123;</div><div class="line">        <span class="keyword">for</span>(start = <span class="number">0</span>; start &lt; n; start += seg + seg) &#123;</div><div class="line">            <span class="keyword">int</span> low = start;</div><div class="line">            <span class="keyword">int</span> mid = min(start+seg, n);</div><div class="line">            <span class="keyword">int</span> high = min(start+seg+seg, n);</div><div class="line">            <span class="keyword">int</span> start1 = low;</div><div class="line">            <span class="keyword">int</span> end1 = mid;</div><div class="line">            <span class="keyword">int</span> start2 = mid;</div><div class="line">            <span class="keyword">int</span> end2 = high;</div><div class="line">            <span class="keyword">int</span> k = low;</div><div class="line">            <span class="keyword">while</span>(start1 &lt; end1 &amp;&amp; start2 &lt; end2) &#123;</div><div class="line">                b[k++] = a[start1] &lt; a[start2] ? a[start1++] : a[start2++];</div><div class="line">            &#125;</div><div class="line">            <span class="keyword">while</span>(start1 &lt; end1) &#123;</div><div class="line">                b[k++] = a[start1++];</div><div class="line">            &#125;</div><div class="line">            <span class="keyword">while</span>(start2 &lt; end2) &#123;</div><div class="line">                b[k++] = a[start2++];</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">int</span> *tmp = a;</div><div class="line">        a = b;</div><div class="line">        b = tmp;</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">if</span>(a != arr) &#123;</div><div class="line">        <span class="keyword">int</span> i;</div><div class="line">        <span class="keyword">for</span>(i = <span class="number">0</span>; i &lt; n; ++i) &#123;</div><div class="line">            b[i] = a[i];</div><div class="line">        &#125;</div><div class="line">        b = a;</div><div class="line">    &#125;</div><div class="line">    <span class="built_in">free</span>(b);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>复杂度：</p>
-<blockquote>
-<p>最差时间复杂度：O(nlogn)</p>
-<p>最佳时间复杂度：O(n)</p>
-<p>平均时间复杂度：O(nlogn)</p>
-</blockquote>
-<h3 id="快速排序"><a href="#快速排序" class="headerlink" title="快速排序"></a>快速排序</h3><p>概念：每次把序列以基准划分为左右两部分，重新排列使左侧部分小于基准，右侧部分大于基准。再对基准左右两侧分别进行排序。</p>
-<p>步骤：</p>
-<blockquote>
-<p>1、挑出一个元素作为基准</p>
-<p>2、重新排序，使得比基准小的元素都放在基准左侧，比基准大的元素都放在基准右侧。</p>
-<p>3、递归地对基准左右两侧数据进行排序</p>
-</blockquote>
-<p>源代码：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">quick_sort</span><span class="params">(<span class="keyword">int</span> a[], <span class="keyword">int</span> start, <span class="keyword">int</span> end)</span> </span>&#123;</div><div class="line">	<span class="keyword">if</span>(start &gt;= end)</div><div class="line">		<span class="keyword">return</span> ;</div><div class="line">	<span class="keyword">int</span> mid = a[end];</div><div class="line">	<span class="keyword">int</span> left = start;</div><div class="line">	<span class="keyword">int</span> right = end - <span class="number">1</span>;</div><div class="line">	<span class="keyword">while</span>(left &lt; right) &#123;</div><div class="line">		<span class="keyword">while</span>(a[left] &lt; mid &amp;&amp; left &lt; right)</div><div class="line">			++left;</div><div class="line">		<span class="keyword">while</span>(a[right] &gt;= mid &amp;&amp; left &lt; right)</div><div class="line">			--right;</div><div class="line">		swap(&amp;a[left], &amp;a[right]);</div><div class="line">	&#125;</div><div class="line">	<span class="keyword">if</span>(a[left] &gt;= a[end]) &#123;</div><div class="line">		swap(&amp;a[left], &amp;a[end]);</div><div class="line">	&#125; <span class="keyword">else</span> ++left;</div><div class="line">	quick_sort(a, start, left<span class="number">-1</span>);</div><div class="line">	quick_sort(a, left+<span class="number">1</span>, end);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>复杂度：</p>
-<blockquote>
-<p>最差时间复杂度：O(n^2)</p>
-<p>最佳时间复杂度：O(nlogn)</p>
-<p>平均时间复杂度：O(nlogn)</p>
-</blockquote>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;p&gt;该篇博客介绍的经典算法有：冒泡排序、选择排序、插入排序、希尔排序、归并排序、快速排序&lt;/p&gt;
-&lt;h3 id=&quot;冒泡排序-Bubble-Sort&quot;&gt;&lt;a href=&quot;#冒泡排序-Bubble-Sort&quot; class=&quot;headerlink&quot; title=&quot;冒泡排序 Bubbl
-    
-    </summary>
-    
-      <category term="coding" scheme="http://blog.yinwoods.work/categories/coding/"/>
-    
-    
-      <category term="algorithm" scheme="http://blog.yinwoods.work/tags/algorithm/"/>
     
   </entry>
   
