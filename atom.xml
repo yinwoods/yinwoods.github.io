@@ -643,48 +643,6 @@
   </entry>
   
   <entry>
-    <title>首尾指针法</title>
-    <link href="http://blog.yinwoods.work/2016/10/16/%E9%A6%96%E5%B0%BE%E6%8C%87%E9%92%88%E6%B3%95/"/>
-    <id>http://blog.yinwoods.work/2016/10/16/首尾指针法/</id>
-    <published>2016-10-15T16:00:00.000Z</published>
-    <updated>2017-07-26T10:06:54.000Z</updated>
-    
-    <content type="html"><![CDATA[<p>首尾指针法多应用于在已排序的数组中实现O(N)的查找。</p>
-<p>例如：给定一个整数k，对于两个递增数组，找到(i, j)使得 a 中的 i 位置与 b 中的 j 位置满足 a[i] + b[j] = k。<br>对于这种问题，我们往往可以取 a 中的第i位及 b 中第j位，依次相加并根据相加结果与数值 k 的大小来决定i, j的移动方向。</p>
-<p>具体代码如下：</p>
-<pre><code>#!CPP
-while (i &lt; a.size()) {
-    while(a[i] + b[j] &gt; X &amp;&amp; j &gt; 0) j--;
-    if (a[i] + b[j] == X) writeAnswer(i, j);
-    i++;
-}
-</code></pre><p>问题变形：</p>
-<p>1、对于无重复元素的数组 a，问存在多少种三个数相加，和为定值k的情况。</p>
-<blockquote>
-<p>解答：先对数组排序，外部循环遍历a，并在循环内部找a[p] + a[q] = k - a[i]的情况。其中 p,q 的寻找即利用首尾指针法。</p>
-</blockquote>
-<p>2、对于无重复元素的数组 a，问存在多少种两个数相减，和为定值k的情况。</p>
-<blockquote>
-<p>解答：先对数组排序，外部循环遍历a，判断a[i] + k是否在数组a中即可，判断可以利用set来实现log(N)的时间复杂度，因此该算法的时间复杂度为O(NlogN)。</p>
-<p>解答： 更高效的方法是取i = 0, j = 1, 当 a[j] - a[i] &gt; k 时，++i；当a[j] - a[i] &lt; k时，++j;</p>
-</blockquote>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;p&gt;首尾指针法多应用于在已排序的数组中实现O(N)的查找。&lt;/p&gt;
-&lt;p&gt;例如：给定一个整数k，对于两个递增数组，找到(i, j)使得 a 中的 i 位置与 b 中的 j 位置满足 a[i] + b[j] = k。&lt;br&gt;对于这种问题，我们往往可以取 a 中的第i位及 b 中第
-    
-    </summary>
-    
-      <category term="coding" scheme="http://blog.yinwoods.work/categories/coding/"/>
-    
-    
-      <category term="algorithm" scheme="http://blog.yinwoods.work/tags/algorithm/"/>
-    
-  </entry>
-  
-  <entry>
     <title>后缀数组(suffix Array)学习</title>
     <link href="http://blog.yinwoods.work/2016/10/16/%E5%90%8E%E7%BC%80%E6%95%B0%E7%BB%84%E5%AD%A6%E4%B9%A0/"/>
     <id>http://blog.yinwoods.work/2016/10/16/后缀数组学习/</id>
@@ -733,6 +691,48 @@ while (i &lt; a.size()) {
     
     
       <category term="algorithm, data structure" scheme="http://blog.yinwoods.work/tags/algorithm-data-structure/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>首尾指针法</title>
+    <link href="http://blog.yinwoods.work/2016/10/16/%E9%A6%96%E5%B0%BE%E6%8C%87%E9%92%88%E6%B3%95/"/>
+    <id>http://blog.yinwoods.work/2016/10/16/首尾指针法/</id>
+    <published>2016-10-15T16:00:00.000Z</published>
+    <updated>2017-07-26T10:06:54.000Z</updated>
+    
+    <content type="html"><![CDATA[<p>首尾指针法多应用于在已排序的数组中实现O(N)的查找。</p>
+<p>例如：给定一个整数k，对于两个递增数组，找到(i, j)使得 a 中的 i 位置与 b 中的 j 位置满足 a[i] + b[j] = k。<br>对于这种问题，我们往往可以取 a 中的第i位及 b 中第j位，依次相加并根据相加结果与数值 k 的大小来决定i, j的移动方向。</p>
+<p>具体代码如下：</p>
+<pre><code>#!CPP
+while (i &lt; a.size()) {
+    while(a[i] + b[j] &gt; X &amp;&amp; j &gt; 0) j--;
+    if (a[i] + b[j] == X) writeAnswer(i, j);
+    i++;
+}
+</code></pre><p>问题变形：</p>
+<p>1、对于无重复元素的数组 a，问存在多少种三个数相加，和为定值k的情况。</p>
+<blockquote>
+<p>解答：先对数组排序，外部循环遍历a，并在循环内部找a[p] + a[q] = k - a[i]的情况。其中 p,q 的寻找即利用首尾指针法。</p>
+</blockquote>
+<p>2、对于无重复元素的数组 a，问存在多少种两个数相减，和为定值k的情况。</p>
+<blockquote>
+<p>解答：先对数组排序，外部循环遍历a，判断a[i] + k是否在数组a中即可，判断可以利用set来实现log(N)的时间复杂度，因此该算法的时间复杂度为O(NlogN)。</p>
+<p>解答： 更高效的方法是取i = 0, j = 1, 当 a[j] - a[i] &gt; k 时，++i；当a[j] - a[i] &lt; k时，++j;</p>
+</blockquote>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;首尾指针法多应用于在已排序的数组中实现O(N)的查找。&lt;/p&gt;
+&lt;p&gt;例如：给定一个整数k，对于两个递增数组，找到(i, j)使得 a 中的 i 位置与 b 中的 j 位置满足 a[i] + b[j] = k。&lt;br&gt;对于这种问题，我们往往可以取 a 中的第i位及 b 中第
+    
+    </summary>
+    
+      <category term="coding" scheme="http://blog.yinwoods.work/categories/coding/"/>
+    
+    
+      <category term="algorithm" scheme="http://blog.yinwoods.work/tags/algorithm/"/>
     
   </entry>
   
