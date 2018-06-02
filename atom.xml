@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://blog.yinwoods.work/"/>
-  <updated>2017-12-30T06:54:42.677Z</updated>
+  <updated>2018-06-02T07:43:52.363Z</updated>
   <id>http://blog.yinwoods.work/</id>
   
   <author>
@@ -14,6 +14,127 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>IO模式和IO多路复用</title>
+    <link href="http://blog.yinwoods.work/2018/06/02/IO%E6%A8%A1%E5%BC%8F%E5%92%8CIO%E5%A4%9A%E8%B7%AF%E5%A4%8D%E7%94%A8/"/>
+    <id>http://blog.yinwoods.work/2018/06/02/IO模式和IO多路复用/</id>
+    <published>2018-06-02T06:54:00.000Z</published>
+    <updated>2018-06-02T07:43:52.363Z</updated>
+    
+    <content type="html"><![CDATA[<p>现在操作系统都采用虚拟寻址，处理器先产生一个虚拟地址，通过地址翻译成物理地址（内存的地址），再通过总线的传递，最后处理器拿到某个物理地址返回的字节。</p>
+<p>对32位操作系统而言，它的寻址空间（虚拟存储空间）为4G（2的32次方）。</p>
+<p>核空间：在liunx中，将最高的1G字节（从虚拟地址0xC0000000到0xFFFFFFFF），供内核使用，称为“内核空间”。</p>
+<p>用户空间: 在liunx中，将较低的3G字节（从虚拟地址 0x00000000到0xBFFFFFFF），供各个进程使用，称为“用户空间）。</p>
+<p>内核态：当一个任务（进程）执行系统调用而陷入内核代码中执行时，我们就称进程处于内核运行态</p>
+<p>用户态：每个进程都有自己的内核栈。当进程在执行用户自己的代码时，则称其处于用户运行态（用户态）</p>
+<p>因为每个进程可以通过系统调用进入内核，因此，Linux内核由系统 内的所有进程共享。于是，从具体进程的角度来看，每个进程可以拥有4G字节的虚拟空间。</p>
+<ul>
+<li><p>进程寻址空间0~4G</p>
+</li>
+<li><p>进程在用户态只能访问0~3G，只有进入内核态才能访问3G~4G</p>
+</li>
+<li><p>进程通过系统调用进入内核态</p>
+</li>
+<li>每个进程虚拟空间的3G~4G部分是相同的</li>
+</ul>
+<h4 id="进程上下文切换（进程切换）"><a href="#进程上下文切换（进程切换）" class="headerlink" title="进程上下文切换（进程切换）"></a>进程上下文切换（进程切换）</h4><p>为了控制进程的执行，内核必须有能力挂起正在CPU上运行的进程，并恢复以前挂起的某个进程的执行。这种行为被称为进程切换（也叫调度）。因此可以说，任何进程都是在操作系统内核的支持下运行的，是与内核紧密相关的。</p>
+<p>从一个进程的运行转到另一个进程上运行，这个过程中经过下面这些变化：</p>
+<ol>
+<li><p>保存当前进程A的上下文。 上下文就是内核再次唤醒当前进程时所需要的状态，由一些对象（程序计数器、状态寄存器、用户栈等各种内核数据结构）的值组成。 这些值包括描绘地址空间的页表、包含进程相关信息的进程表、文件表等。</p>
+</li>
+<li><p>切换页全局目录以安装一个新的地址空间。</p>
+</li>
+<li><p>恢复进程B的上下文。</p>
+</li>
+</ol>
+<p>可以理解成一个比较耗资源的过程。</p>
+<h4 id="直接I-O和缓存I-O"><a href="#直接I-O和缓存I-O" class="headerlink" title="直接I/O和缓存I/O"></a>直接I/O和缓存I/O</h4><p>缓存 I/O 又被称作标准 I/O，大多数文件系统的默认 I/O 操作都是缓存 I/O。在 Linux 的缓存 I/O 机制中，以write为例，数据会先被拷贝进程缓冲区，在拷贝到操作系统内核的缓冲区中，然后才会写到存储设备中。<br><img src="https://l.ruby-china.org/photo/2018/d410db1c-f699-4122-8c4d-e28a348d31dd.png!large" alt="1.3"></p>
+<h2 id="IO模式"><a href="#IO模式" class="headerlink" title="IO模式"></a>IO模式</h2><p>对于一次IO访问（这回以read举例），数据会先被拷贝到操作系统内核的缓冲区中，然后才会从操作系统内核的缓冲区拷贝到应用程序的缓冲区，最后交给进程。所以说，当一个read操作发生时，它会经历两个阶段：</p>
+<ul>
+<li><ol>
+<li>等待数据准备 (Waiting for the data to be ready)</li>
+</ol>
+</li>
+<li><ol>
+<li>将数据从内核拷贝到进程中 (Copying the data from the kernel to the process)</li>
+</ol>
+</li>
+</ul>
+<p>正式因为这两个阶段，linux系统产生了下面五种网络模式的方案：</p>
+<ul>
+<li>– 阻塞 I/O（blocking IO）</li>
+<li>– 非阻塞 I/O（nonblocking IO）</li>
+<li>– I/O 多路复用（ IO multiplexing）</li>
+<li>– 信号驱动 I/O（ signal driven IO）</li>
+<li>– 异步 I/O（asynchronous IO）</li>
+</ul>
+<h4 id="block-I-O模型（阻塞I-O）"><a href="#block-I-O模型（阻塞I-O）" class="headerlink" title="block I/O模型（阻塞I/O）"></a>block I/O模型（阻塞I/O）</h4><p>read为例：<br><img src="https://l.ruby-china.org/photo/2018/56b3cedc-cd0e-4d54-a001-28004acc71ad.jpg!large" alt="block IO"></p>
+<p>（1）进程发起read，进行recvfrom系统调用；</p>
+<p>（2）内核开始第一阶段，准备数据（从磁盘拷贝到缓冲区），进程请求的数据并不是一下就能准备好；准备数据是要消耗时间的；</p>
+<p>（3）与此同时，进程阻塞（进程是自己选择阻塞与否），等待数据ing；</p>
+<p>（4）直到数据从内核拷贝到了用户空间，内核返回结果，进程解除阻塞。</p>
+<p>也就是说，内核准备数据和数据从内核拷贝到进程内存地址这两个过程都是阻塞的。</p>
+<h4 id="non-block（非阻塞I-O模型）"><a href="#non-block（非阻塞I-O模型）" class="headerlink" title="non-block（非阻塞I/O模型）"></a>non-block（非阻塞I/O模型）</h4><p>可以通过设置socket使其变为non-blocking。当对一个non-blocking socket执行读操作时，流程是这个样子：<br><img src="https://l.ruby-china.org/photo/2018/77179aa5-7754-4822-8ab4-903566840175.jpg!large" alt="non-block IO"></p>
+<p>（1）当用户进程发出read操作时，如果kernel中的数据还没有准备好；</p>
+<p>（2）那么它并不会block用户进程，而是立刻返回一个error，从用户进程角度讲 ，它发起一个read操作后，并不需要等待，而是马上就得到了一个结果；</p>
+<p>（3）用户进程判断结果是一个error时，它就知道数据还没有准备好，于是它可以再次发送read操作。一旦kernel中的数据准备好了，并且又再次收到了用户进程的system call；</p>
+<p>（4）那么它马上就将数据拷贝到了用户内存，然后返回。</p>
+<p>所以，nonblocking IO的特点是用户进程在内核准备数据的阶段需要不断的主动询问数据好了没有。</p>
+<h4 id="I-O多路复用"><a href="#I-O多路复用" class="headerlink" title="I/O多路复用"></a>I/O多路复用</h4><p>I/O多路复用实际上就是用select, poll, epoll监听多个io对象，对一个IO端口，两次调用，两次返回，比阻塞IO并没有什么优越性；关键是能实现同时对多个IO端口进行监听；当io对象有变化（有数据）的时候就通知用户进程。现在先来看下I/O多路复用的流程：<br><img src="https://l.ruby-china.org/photo/2018/6b727e99-b45e-4104-ba1d-1dd2dd281e52.jpg!large" alt="I/O多路复用"><br>（1）当用户进程调用了select，那么整个进程会被block；</p>
+<p>（2）而同时，kernel会“监视”所有select负责的socket；</p>
+<p>（3）当任何一个socket中的数据准备好了，select就会返回；</p>
+<p>（4）这个时候用户进程再调用read操作，将数据从kernel拷贝到用户进程。</p>
+<p>所以，I/O 多路复用的特点是通过一种机制一个进程能同时等待多个文件描述符，而这些文件描述符（套接字描述符）其中的任意一个进入读就绪状态，select()函数就可以返回。</p>
+<p>这个图和blocking IO的图其实并没有太大的不同，事实上，还更差一些。因为这里需要使用两个system call (select 和 recvfrom)，而blocking IO只调用了一个system call (recvfrom)。 但是，用select的优势在于它可以同时处理多个connection。</p>
+<p>所以，如果处理的连接数不是很高的话，使用select/epoll的web server不一定比使用多线程 + 阻塞 IO的web server性能更好，可能延迟还更大。</p>
+<p>select/epoll的优势并不是对于单个连接能处理得更快，而是在于能处理更多的连接。</p>
+<p>在IO multiplexing Model中，实际中，对于每一个socket，一般都设置成为non-blocking，但是，如上图所示，整个用户的process其实是一直被block的。只不过process是被select这个函数block，而不是被socket IO给block。</p>
+<h4 id="信号驱动I-O模型"><a href="#信号驱动I-O模型" class="headerlink" title="信号驱动I/O模型"></a>信号驱动I/O模型</h4><p><img src="https://l.ruby-china.org/photo/2018/c672dd70-c22a-42a6-a798-0c12aa7bf765.png!large" alt="sigio"></p>
+<p>我们首先开启套接口的信号驱动I/O功能，并通过sigaction系统调用安装一个信号处理函数。该系统调用立即返回，我们的进程继续工作，也就是说它没有被阻塞。当数据报准备好读取时，内核就为该进程产生一个SIGIO信号。我们随后既可以在信号处理函数中调用recvfrom读取数据报，并通知主循环数据已准备好待处理，也可以立即通知主循环，让它读取数据报。</p>
+<p>无论如何处理SIGIO信号，这种模型的优势在于等待数据报到达期间，进程不被阻塞。主循环可以继续执行，只要不时等待来自信号处理函数的通知：既可以是数据已准备好被处理，也可以是数据报已准备好被读取。</p>
+<h4 id="asynchronous-I-O（异步-I-O）"><a href="#asynchronous-I-O（异步-I-O）" class="headerlink" title="asynchronous I/O（异步 I/O）"></a>asynchronous I/O（异步 I/O）</h4><p>异步I/O（asynchronous I/O）由POSIX规范定义。一般地说，这些函数的工作机制是：告知内核启动某个操作，并让内核在整个操作（包括将数据从内核拷贝到我们自己的缓冲区）完成后通知我们。这种模型与信号驱动模型的主要区别在于：信号驱动I/O是由内核通知我们何时启动一个I/O操作，而异步I/O模型是由内核通知我们I/O操作何时完成。</p>
+<p><img src="https://l.ruby-china.org/photo/2018/9ad0c25d-72e9-4a2d-8182-5cea6dc73b28.jpg!large" alt="asyncio"></p>
+<p>我们调用aio<em>read函数（POSIX异步I/O函数以aio</em>或lio_开头），给内核传递描述字、缓冲区指针、缓冲区大小（与read相同的三个参数）、文件偏移（与lseek类似），并告诉内核当整个操作完成时如何通知我们。该系统调用立即返回，在等待I/O完成期间，我们的进程不被阻塞。</p>
+<p>（1）用户进程发起read操作之后，立刻就可以开始去做其它的事。</p>
+<p>（2）而另一方面，从kernel的角度，当它受到一个asynchronous read之后，首先它会立刻返回，所以不会对用户进程产生任何block。</p>
+<p>（3）然后，kernel会等待数据准备完成，然后将数据拷贝到用户内存，当这一切都完成之后，kernel会给用户进程发送一个signal，告诉它read操作完成了。</p>
+<h2 id="select-poll-epoll"><a href="#select-poll-epoll" class="headerlink" title="select/poll/epoll"></a>select/poll/epoll</h2><p>在服务器端，每次通过accept系统调用接收客户端请求，建立连接，接着服务器端会获取代表这个连接的文件描述符（Linux下socket也被视为文件），并处理这个文件描述符上的相关请求。当与服务器端连接的大量客户端同时请求时，服务端需要能够感知到请求的到来并及时处理。一个很简单的思路是使用CPU轮询已建立连接的文件描述符上是否有新的请求到来，类似如下的代码：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">for</span> descriptor <span class="keyword">in</span> open_connections:</div><div class="line">    <span class="keyword">if</span> has_new_input(descriptor):</div><div class="line">        process_input(descriptor)</div></pre></td></tr></table></figure></p>
+<p>这种方法理论上是可行的，但是当大量连接中只有少量是活跃的连接时，这无疑会浪费很多CPU时间，在Linux下，与其在服务端对这些文件描述符做轮询，不如把文件描述符交给内核，让它负责告诉服务端哪个文件描述符上有新的请求。让Linux处理大量文件描户符的操作其实就是I/O多路复用，I/O多路复用的本质就是用select/poll/epoll，去监听多个socket文件描述符，如果其中的socket文件描述符有变化，只要有变化，服务器进程就知道了。</p>
+<p>在任意unix机器上，select和poll都是可用的，epoll则只能够在Linux上使用。select和poll的工作方式如下：</p>
+<ol>
+<li>将多个文件描述符传递给select/poll</li>
+<li>select/poll会在任一文件描述符有新的请求到来时告知服务端进程</li>
+</ol>
+<p>需要注意的是select和poll的源码几乎是相同的，不同的是select支持的操作不如poll支持的丰富，如在文件描述符有新的请求到来时，select只会返回<code>有新的输入</code>、<code>有新的输出</code>或<code>有新的错误</code>；而poll则支持<code>POLLRDNORM | POLLRDBAND | POLLIN | POLLHUP | POLLERR</code>，select会将poll所支持的多种输出统一转换为一种输出：<code>可写</code></p>
+<p>当文件描述符数量较少时，poll的性能表现也会好于select，区别可以从二者的函数声明中看出：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">int ppoll(struct pollfd *fds, nfds_t nfds,</div><div class="line">          const struct timespec *tmo_p, const sigset_t</div><div class="line">          *sigmask)`</div><div class="line"></div><div class="line">int pselect(int nfds, fd_set *readfds, fd_set *writefds,</div><div class="line">            fd_set *exceptfds, const struct timespec *timeout,</div><div class="line">            const sigset_t *sigmask);</div></pre></td></tr></table></figure>
+<p>当使用poll时，可以传递对应的文件描述符集合，从而使其只关注对应的文件描述符；而select则仍会遍历所有的文件描述符，但仅对遍历过程中满足sigmask的文件描述符进行监听；如当需要监听1、3、8、19的文件描述符时，可以在<code>fds</code>中指明1、3、8、19；而使用select时，则会遍历从0到19的所有描述符，再使用sigmask判断每个文件描述符是否是需要监听的。</p>
+<p>另外，select是不断轮询去监听的socket，socket个数有限制，一般为1024个；poll还是采用轮询方式监听，只不过没有个数限制；</p>
+<p>nodejs使用epoll模型的原因是：epoll并不是采用轮询方式去监听了，而是当socket有变化时通过回调的方式主动告知用户进程。能够有效提升CPU利用率。</p>
+<p>性能对比：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="meta"># operations  |  poll  |  select   | epoll</span></div><div class="line"><span class="number">10</span>            |   <span class="number">0.61</span> |    <span class="number">0.73</span>   | <span class="number">0.41</span></div><div class="line"><span class="number">100</span>           |   <span class="number">2.9</span>  |    <span class="number">3.0</span>    | <span class="number">0.42</span></div><div class="line"><span class="number">1000</span>          |  <span class="number">35</span>    |   <span class="number">35</span>      | <span class="number">0.53</span></div><div class="line"><span class="number">10000</span>         | <span class="number">990</span>    |  <span class="number">930</span>      | <span class="number">0.66</span></div></pre></td></tr></table></figure>
+<p><strong>需要注意的是：epoll并不是在所有的应用场景都会比select和poll高很多。尤其是当活动连接比较多的时候，回调函数被触发得过于频繁的时候，epoll的效率也会受到显著影响！所以，epoll特别适用于连接数量多，但活动连接较少的情况。</strong></p>
+<h3 id="LT（水平触发）和ET（边缘出发）"><a href="#LT（水平触发）和ET（边缘出发）" class="headerlink" title="LT（水平触发）和ET（边缘出发）"></a>LT（水平触发）和ET（边缘出发）</h3><p>epoll对文件描述符的操作有两种模式：LT（level trigger）和ET（edge trigger）。LT模式是默认模式，LT模式与ET模式的区别如下：<br>　　LT模式：当epoll_wait检测到描述符事件发生并将此事件通知应用程序，应用程序可以不立即处理该事件。下次调用epoll_wait时，会再次响应应用程序并通知此事件。<br>　　ET模式：当epoll_wait检测到描述符事件发生并将此事件通知应用程序，应用程序必须立即处理该事件。如果不处理，下次调用epoll_wait时，不会再次响应应用程序并通知此事件。</p>
+<p>LT：水平触发，效率会低于ET触发，尤其在大并发，大流量的情况下。但是LT对代码编写要求比较低，不容易出现问题。LT模式服务编写上的表现是：只要有数据没有被获取，内核就不断通知你，因此不用担心事件丢失的情况。<br>ET：边缘触发，效率非常高，在并发，大流量的情况下，会比LT少很多epoll的系统调用，因此效率高。但是对编程要求高，需要细致的处理每个请求，否则容易发生丢失事件的情况。</p>
+<p>ET模式在很大程度上减少了epoll事件被重复触发的次数，因此效率要比LT模式高。epoll工作在ET模式的时候，必须使用非阻塞套接口，以避免由于一个文件句柄的阻塞读/阻塞写操作把处理多个文件描述符的任务饿死。</p>
+<h4 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h4><p><a href="https://ruby-china.org/topics/35472" target="_blank" rel="external">IO 模式和 IO 多路复用 · Ruby China</a><br><a href="https://idea.popcount.org/2017-01-06-select-is-fundamentally-broken/" target="_blank" rel="external">Select is fundamentally broken —    Idea of the day</a><br><a href="https://jvns.ca/blog/2017/06/03/async-io-on-linux--select--poll--and-epoll/" target="_blank" rel="external">Async IO on Linux: select, poll, and epoll - Julia Evans</a></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;现在操作系统都采用虚拟寻址，处理器先产生一个虚拟地址，通过地址翻译成物理地址（内存的地址），再通过总线的传递，最后处理器拿到某个物理地址返回的字节。&lt;/p&gt;
+&lt;p&gt;对32位操作系统而言，它的寻址空间（虚拟存储空间）为4G（2的32次方）。&lt;/p&gt;
+&lt;p&gt;核空间：在liunx
+    
+    </summary>
+    
+      <category term="coding" scheme="http://blog.yinwoods.work/categories/coding/"/>
+    
+    
+      <category term="Linux 操作系统 服务器编程" scheme="http://blog.yinwoods.work/tags/Linux-%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F-%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%96%E7%A8%8B/"/>
+    
+  </entry>
   
   <entry>
     <title>配置不同局域网ssh互联</title>
@@ -643,6 +764,48 @@
   </entry>
   
   <entry>
+    <title>首尾指针法</title>
+    <link href="http://blog.yinwoods.work/2016/10/16/%E9%A6%96%E5%B0%BE%E6%8C%87%E9%92%88%E6%B3%95/"/>
+    <id>http://blog.yinwoods.work/2016/10/16/首尾指针法/</id>
+    <published>2016-10-15T16:00:00.000Z</published>
+    <updated>2017-07-26T10:06:54.000Z</updated>
+    
+    <content type="html"><![CDATA[<p>首尾指针法多应用于在已排序的数组中实现O(N)的查找。</p>
+<p>例如：给定一个整数k，对于两个递增数组，找到(i, j)使得 a 中的 i 位置与 b 中的 j 位置满足 a[i] + b[j] = k。<br>对于这种问题，我们往往可以取 a 中的第i位及 b 中第j位，依次相加并根据相加结果与数值 k 的大小来决定i, j的移动方向。</p>
+<p>具体代码如下：</p>
+<pre><code>#!CPP
+while (i &lt; a.size()) {
+    while(a[i] + b[j] &gt; X &amp;&amp; j &gt; 0) j--;
+    if (a[i] + b[j] == X) writeAnswer(i, j);
+    i++;
+}
+</code></pre><p>问题变形：</p>
+<p>1、对于无重复元素的数组 a，问存在多少种三个数相加，和为定值k的情况。</p>
+<blockquote>
+<p>解答：先对数组排序，外部循环遍历a，并在循环内部找a[p] + a[q] = k - a[i]的情况。其中 p,q 的寻找即利用首尾指针法。</p>
+</blockquote>
+<p>2、对于无重复元素的数组 a，问存在多少种两个数相减，和为定值k的情况。</p>
+<blockquote>
+<p>解答：先对数组排序，外部循环遍历a，判断a[i] + k是否在数组a中即可，判断可以利用set来实现log(N)的时间复杂度，因此该算法的时间复杂度为O(NlogN)。</p>
+<p>解答： 更高效的方法是取i = 0, j = 1, 当 a[j] - a[i] &gt; k 时，++i；当a[j] - a[i] &lt; k时，++j;</p>
+</blockquote>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;首尾指针法多应用于在已排序的数组中实现O(N)的查找。&lt;/p&gt;
+&lt;p&gt;例如：给定一个整数k，对于两个递增数组，找到(i, j)使得 a 中的 i 位置与 b 中的 j 位置满足 a[i] + b[j] = k。&lt;br&gt;对于这种问题，我们往往可以取 a 中的第i位及 b 中第
+    
+    </summary>
+    
+      <category term="coding" scheme="http://blog.yinwoods.work/categories/coding/"/>
+    
+    
+      <category term="algorithm" scheme="http://blog.yinwoods.work/tags/algorithm/"/>
+    
+  </entry>
+  
+  <entry>
     <title>后缀数组(suffix Array)学习</title>
     <link href="http://blog.yinwoods.work/2016/10/16/%E5%90%8E%E7%BC%80%E6%95%B0%E7%BB%84%E5%AD%A6%E4%B9%A0/"/>
     <id>http://blog.yinwoods.work/2016/10/16/后缀数组学习/</id>
@@ -691,48 +854,6 @@
     
     
       <category term="algorithm, data structure" scheme="http://blog.yinwoods.work/tags/algorithm-data-structure/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>首尾指针法</title>
-    <link href="http://blog.yinwoods.work/2016/10/16/%E9%A6%96%E5%B0%BE%E6%8C%87%E9%92%88%E6%B3%95/"/>
-    <id>http://blog.yinwoods.work/2016/10/16/首尾指针法/</id>
-    <published>2016-10-15T16:00:00.000Z</published>
-    <updated>2017-07-26T10:06:54.000Z</updated>
-    
-    <content type="html"><![CDATA[<p>首尾指针法多应用于在已排序的数组中实现O(N)的查找。</p>
-<p>例如：给定一个整数k，对于两个递增数组，找到(i, j)使得 a 中的 i 位置与 b 中的 j 位置满足 a[i] + b[j] = k。<br>对于这种问题，我们往往可以取 a 中的第i位及 b 中第j位，依次相加并根据相加结果与数值 k 的大小来决定i, j的移动方向。</p>
-<p>具体代码如下：</p>
-<pre><code>#!CPP
-while (i &lt; a.size()) {
-    while(a[i] + b[j] &gt; X &amp;&amp; j &gt; 0) j--;
-    if (a[i] + b[j] == X) writeAnswer(i, j);
-    i++;
-}
-</code></pre><p>问题变形：</p>
-<p>1、对于无重复元素的数组 a，问存在多少种三个数相加，和为定值k的情况。</p>
-<blockquote>
-<p>解答：先对数组排序，外部循环遍历a，并在循环内部找a[p] + a[q] = k - a[i]的情况。其中 p,q 的寻找即利用首尾指针法。</p>
-</blockquote>
-<p>2、对于无重复元素的数组 a，问存在多少种两个数相减，和为定值k的情况。</p>
-<blockquote>
-<p>解答：先对数组排序，外部循环遍历a，判断a[i] + k是否在数组a中即可，判断可以利用set来实现log(N)的时间复杂度，因此该算法的时间复杂度为O(NlogN)。</p>
-<p>解答： 更高效的方法是取i = 0, j = 1, 当 a[j] - a[i] &gt; k 时，++i；当a[j] - a[i] &lt; k时，++j;</p>
-</blockquote>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;p&gt;首尾指针法多应用于在已排序的数组中实现O(N)的查找。&lt;/p&gt;
-&lt;p&gt;例如：给定一个整数k，对于两个递增数组，找到(i, j)使得 a 中的 i 位置与 b 中的 j 位置满足 a[i] + b[j] = k。&lt;br&gt;对于这种问题，我们往往可以取 a 中的第i位及 b 中第
-    
-    </summary>
-    
-      <category term="coding" scheme="http://blog.yinwoods.work/categories/coding/"/>
-    
-    
-      <category term="algorithm" scheme="http://blog.yinwoods.work/tags/algorithm/"/>
     
   </entry>
   
@@ -1065,56 +1186,6 @@ end. 400 times is more than enough. --><br>‘’’</p>
     
     
       <category term="python" scheme="http://blog.yinwoods.work/tags/python/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>python爬虫小技巧总结</title>
-    <link href="http://blog.yinwoods.work/2016/04/05/python%E7%88%AC%E8%99%AB%E5%B0%8F%E6%8A%80%E5%B7%A7%E6%80%BB%E7%BB%93/"/>
-    <id>http://blog.yinwoods.work/2016/04/05/python爬虫小技巧总结/</id>
-    <published>2016-04-04T16:00:00.000Z</published>
-    <updated>2017-07-26T10:06:54.000Z</updated>
-    
-    <content type="html"><![CDATA[<p>之前在<a href="http://www.codeceo.com/article/python-spider-skills.html" target="_blank" rel="external">码农网</a>看过python的爬虫小技巧，但是我认为总结地不够全面，而且在这段编写爬虫的过程中，也形成了自己的套路～</p>
-<p>特意在这里分享给大家，当然一方面也是以后忘记了留作参考。</p>
-<h3 id="1、基本网页抓取"><a href="#1、基本网页抓取" class="headerlink" title="1、基本网页抓取"></a>1、基本网页抓取</h3><blockquote>
-<ul>
-<li><p>包含伪装浏览器访问（解决403错误）</p>
-</li>
-<li><p>使用代理，避免长时间爬取被封本机IP</p>
-</li>
-<li><p>处理网页gzip压缩</p>
-</li>
-<li><p>HTTPError异常处理</p>
-</li>
-</ul>
-</blockquote>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div></pre></td><td class="code"><pre><div class="line"></div><div class="line"><span class="comment">#获取url 对应 HTML 源码</span></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">getHtml</span><span class="params">(url)</span>:</span></div><div class="line">	<span class="comment">#伪装浏览器</span></div><div class="line">    header = dict(&#123; <span class="string">'User-Agent'</span>: <span class="string">'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Ubuntu Chromium/48.0.2564.116 Chrome/48.0.2564.116 Safari/537.36'</span>,</div><div class="line">                    <span class="string">'Accept-encoding'</span>: <span class="string">'gzip'</span>,</div><div class="line">                    &#125;)</div><div class="line">    request = urllib.request.Request(url, headers=header)</div><div class="line"></div><div class="line">    </div><div class="line">    <span class="keyword">try</span>: </div><div class="line">    	<span class="comment">#使用代理：117.135.252.227:80</span></div><div class="line">        proxy_support = urllib.request.ProxyHandler(&#123;<span class="string">'http'</span>: <span class="string">'117.135.252.227:80'</span>&#125;)</div><div class="line">        opener = urllib.request.build_opener(proxy_support)</div><div class="line">        urllib.request.install_opener(opener)</div><div class="line"></div><div class="line">        page = urllib.request.urlopen(request)</div><div class="line"></div><div class="line">        <span class="comment">#print(page.headers.get('Content-Encoding')) 'gzip'</span></div><div class="line">        <span class="comment">#print(page.headers.get_content_charset()) 'utf8'</span></div><div class="line"></div><div class="line">        <span class="comment">#如果使用了gzip压缩</span></div><div class="line">        <span class="keyword">if</span> page.headers.get(<span class="string">'Content-Encoding'</span>) == <span class="string">'gzip'</span>:</div><div class="line">            <span class="keyword">return</span> zlib.decompress(page.read(), <span class="number">16</span>+zlib.MAX_WBITS).decode(<span class="string">'utf8'</span>)</div><div class="line">        <span class="keyword">else</span>: </div><div class="line">            <span class="keyword">return</span> page.read().decode(page.headers.get_content_charset())</div><div class="line"></div><div class="line">    <span class="keyword">except</span> urllib.request.HTTPError <span class="keyword">as</span> e:</div><div class="line">        print(<span class="string">'HTTPERROR: '</span>, str(e))</div><div class="line">    <span class="keyword">return</span> urllib.request.HTTPError</div></pre></td></tr></table></figure>
-<h3 id="2、Mysql数据库操作"><a href="#2、Mysql数据库操作" class="headerlink" title="2、Mysql数据库操作"></a>2、Mysql数据库操作</h3><p>一般在类的构造函数<strong>init</strong>中完成数据库的连接，在析构函数中断开连接。</p>
-<p>示例如下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div></pre></td><td class="code"><pre><div class="line"></div><div class="line"><span class="keyword">import</span> mysql.connector</div><div class="line"></div><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Example</span><span class="params">()</span>:</span></div><div class="line">	<span class="comment">#构造函数</span></div><div class="line">	<span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self)</span>:</span></div><div class="line">		self.conn = mysql.connector.connect(user=<span class="string">'root'</span>, password=<span class="string">'root'</span>, host=<span class="string">'localhost'</span>, database=<span class="string">'test'</span>)</div><div class="line">		self.cursor = self.conn.cursor(buffered=<span class="keyword">True</span>)</div><div class="line"></div><div class="line">	<span class="comment">#析构函数</span></div><div class="line">	<span class="function"><span class="keyword">def</span> <span class="title">__del__</span><span class="params">(self)</span>:</span></div><div class="line">		self.cursor.close()</div><div class="line">		self.conn.close()</div><div class="line"></div><div class="line">	<span class="comment">#数据库操作</span></div><div class="line">	<span class="comment">#查询table表中id=1的数据个数</span></div><div class="line">	<span class="function"><span class="keyword">def</span> <span class="title">doSomething</span><span class="params">(self)</span>:</span></div><div class="line">		query = <span class="string">'SELECT COUNT(*) FROM table WHERE id = %s'</span></div><div class="line">		data = (<span class="number">1</span>, )</div><div class="line"></div><div class="line">		<span class="comment">#执行查询</span></div><div class="line">		self.cursor.excute(query, data)</div><div class="line">		<span class="comment">#确保查询提交</span></div><div class="line">		self.conn.commit()</div></pre></td></tr></table></figure>
-<h3 id="3、把json格式数据插入表中"><a href="#3、把json格式数据插入表中" class="headerlink" title="3、把json格式数据插入表中"></a>3、把json格式数据插入表中</h3><p>首先使用toJson()函数把我们要插入的数据项转为json格式，再使用jsonINTOMysql()函数将json格式数据插入mysql中。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div></pre></td><td class="code"><pre><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">toJson</span><span class="params">(**kwargs)</span>:</span></div><div class="line">	<span class="keyword">return</span> kwargs</div><div class="line"></div><div class="line"><span class="comment">#把json格式的rowdict插入table中</span></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">jsonINToMysql</span><span class="params">(table, rowdict)</span>:</span></div><div class="line">    self.cursor.execute(<span class="string">'DESCRIBE %s'</span> % table)</div><div class="line">    allowedKeys = set(row[<span class="number">0</span>] <span class="keyword">for</span> row <span class="keyword">in</span> self.cursor.fetchall())</div><div class="line"></div><div class="line">    keys = allowedKeys.intersection(rowdict)</div><div class="line"></div><div class="line">    <span class="keyword">if</span> len(rowdict) &gt; len(keys):</div><div class="line">        unknownKeys = set(rowdict)-allowedKeys</div><div class="line">        print(sys.stderr, <span class="string">"skipping keys"</span>, <span class="string">","</span>.join(unknownKeys))</div><div class="line"></div><div class="line">    columns = <span class="string">","</span>.join(keys)</div><div class="line">    values_template = <span class="string">", "</span>.join([<span class="string">"%s"</span>]*len(keys))</div><div class="line"></div><div class="line">    sql = <span class="string">"INSERT INTO %s(%s) VALUES (%s)"</span> % (table, columns, values_template)</div><div class="line"></div><div class="line">    values = tuple(rowdict[key] <span class="keyword">for</span> key <span class="keyword">in</span> keys)</div><div class="line">    self.cursor.execute(sql, values)</div><div class="line">    self.conn.commit()</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">example</span><span class="params">()</span>:</span></div><div class="line">	<span class="comment">#假设数据表table中有id、name、sex三项</span></div><div class="line">	json = toJson(id=id, name=name, sex=sex)</div><div class="line">	jsonINTOMysql(<span class="string">'table'</span>, json)</div></pre></td></tr></table></figure>
-<h3 id="4、对爬取数据的乱码进行解析"><a href="#4、对爬取数据的乱码进行解析" class="headerlink" title="4、对爬取数据的乱码进行解析"></a>4、对爬取数据的乱码进行解析</h3><p>有时我们需要爬取的是单独的json格式数据(请参考<a href="http://blog.yinwoods.com/coding/%E5%88%A9%E7%94%A8%E7%88%AC%E8%99%AB%E7%88%AC%E5%8F%96js%E7%94%9F%E6%88%90%E6%95%B0%E6%8D%AE.html" target="_blank" rel="external">利用爬虫爬取js生成数据</a>)，可能会发现json中的数据是经过编码的，例如我爬取汽车之家车辆的详细参数配置时，会发现json中的数据为：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">&#123;&quot;SIP_C_119&quot;:&quot;2645&quot;,&quot;SIP_C_250&quot;:&quot;%2d&quot;,&quot;SIP_C_306&quot;:&quot;%2d&quot;,&quot;SIP_T_LOGO&quot;:&quot;http://i1.itc.cn/20130624/83e_01580269_5a5f_1526_74cc_c6bf0064c28e_1.jpg&quot;,&quot;SIP_C_114&quot;:&quot;%2d%2d%2d&quot;,&quot;SIP_C_117&quot;:&quot;7005&quot;,&quot;SIP_C_305&quot;:&quot;%2d&quot;,&quot;SIP_C_304&quot;:&quot;%2d%2d%2d&quot;,&quot;SIP_C_118&quot;:&quot;2040&quot;,&quot;SIP_C_303&quot;:&quot;%u67f4%u6cb9%u673a&quot;,&quot;SIP_C_115&quot;:&quot;%u6574%u8f663%u5e74%2f6%u4e07%u516c%u91cc&quot;,&quot;SIP_C_116&quot;:&quot;%2d%2d%2d&quot;,&quot;model_engine_type&quot;:2,&quot;SIP_C_120&quot;:&quot;3935&quot;,&quot;overseas&quot;:false,&quot;SIP_T_PRICE&quot;:32.0,&quot;SIP_C_261&quot;:&quot;%u25cf&quot;,&quot;SIP_T_ID&quot;:127870,&quot;SIP_T_GEAR&quot;:&quot;M&quot;,&quot;SIP_C_124&quot;:&quot;%u5ba2%u8f66&quot;,&quot;SIP_C_125&quot;:&quot;2&quot;,&quot;SIP_C_126&quot;:&quot;10%2d23&quot;,&quot;SIP_C_127&quot;:&quot;90&quot;,&quot;SIP_C_170&quot;:&quot;%2d&quot;,&quot;SIP_C_329&quot;:&quot;120&quot;,&quot;SIP_C_171&quot;:&quot;%u673a%u68b0%u6db2%u538b%u52a9%u529b%u8f6c%u5411&quot;,&quot;SIP_C_322&quot;:&quot;%2d&quot;,&quot;SIP_T_MODELNAME&quot;:&quot;%u5b89%u51ef%u5ba2%u8f66%20%u5b9d%u65af%u901a&quot;,&quot;SIP_C_321&quot;:&quot;%2d&quot;,&quot;SIP_C_320&quot;:&quot;%u624b%u52a8&quot;,&quot;SIP_C_185&quot;:&quot;%u25cf&quot;,&quot;SIP_C_283&quot;:&quot;%u25cf&quot;,&quot;SIP_C_318&quot;:&quot;%u5364%u7d20&quot;,&quot;SIP_C_108&quot;:&quot;5%u6863%u624b%u52a8&quot;,&quot;SIP_C_317&quot;:&quot;%2d&quot;,&quot;SIP_C_285&quot;:&quot;%u25cf&quot;,&quot;SIP_C_314&quot;:&quot;%2d&quot;,&quot;SIP_C_104&quot;:&quot;%u6c5f%u6dee%u6c7d%u8f66&quot;,&quot;SIP_C_313&quot;:&quot;%2d&quot;,&quot;SIP_C_105&quot;:&quot;%u5176%u4ed6%u8f66%u578b&quot;,&quot;SIP_C_316&quot;:&quot;%2d&quot;,&quot;SIP_C_106&quot;:&quot;2%u95e810%2d23%u5ea7%u5ba2%u8f66&quot;,&quot;SIP_C_315&quot;:&quot;%2d&quot;,&quot;SIP_C_107&quot;:&quot;3%2e0T%20163%u9a6c%u529bL4&quot;,&quot;SIP_C_310&quot;:&quot;%2d&quot;,&quot;SIP_C_312&quot;:&quot;%2d&quot;,&quot;SIP_C_102&quot;:&quot;32%2e0%u4e07%u5143&quot;,&quot;SIP_C_103&quot;:&quot;32%2e0%7e32%2e0%u4e07%u5143&quot;,&quot;SIP_C_150&quot;:&quot;%u7f38%u5185%u76f4%u55b7&quot;,&quot;SIP_C_294&quot;:&quot;%2d%2d%2f%2d%2d%2f%2d%2d&quot;,&quot;SIP_C_297&quot;:&quot;163&quot;,&quot;SIP_C_291&quot;:&quot;%2d%2d%2d&quot;,&quot;SIP_C_151&quot;:&quot;%u94dd%u5408%u91d1&quot;,&quot;SIP_C_293&quot;:&quot;7005x2040x2645&quot;,&quot;SIP_C_152&quot;:&quot;%u94f8%u94c1&quot;,&quot;SIP_C_292&quot;:&quot;%2d%2d%2d&quot;,&quot;SIP_T_DISPL&quot;:3.0,&quot;SIP_C_158&quot;:&quot;%u624b%u52a8&quot;,&quot;SIP_C_157&quot;:&quot;5&quot;,&quot;SIP_C_156&quot;:&quot;5%u6863%u624b%u52a8&quot;,&quot;SIP_C_155&quot;:&quot;%u56fdIV&quot;,&quot;SIP_C_298&quot;:&quot;120%2f3800&quot;,&quot;SIP_C_299&quot;:&quot;362%2f1600%2d2200&quot;,&quot;SIP_C_159&quot;:&quot;%u4e2d%u7f6e%u540e%u9a71&quot;,&quot;SIP_C_224&quot;:&quot;%u771f%u76ae&quot;,&quot;SIP_C_160&quot;:&quot;%u9ea6%u5f17%u900a%u5f0f%u72ec%u7acb%u60ac%u6302&quot;,&quot;SIP_C_161&quot;:&quot;%u94a2%u677f%u5f39%u7c27%u7ed3%u6784&quot;,&quot;SIP_C_162&quot;:&quot;%u627f%u8f7d%u5f0f%u8f66%u8eab&quot;,&quot;SIP_C_163&quot;:&quot;7%2e00%20R16&quot;,&quot;SIP_C_164&quot;:&quot;7%2e00%20R16&quot;,&quot;SIP_C_165&quot;:&quot;%u94a2%u5236&quot;,&quot;nameDomain&quot;:&quot;4094&quot;,&quot;SIP_C_167&quot;:&quot;%u901a%u98ce%u76d8%u5f0f&quot;,&quot;SIP_C_166&quot;:&quot;%u5168%u5c3a%u5bf8%u5907%u80ce&quot;,&quot;SIP_C_169&quot;:&quot;%u624b%u5239%u5f0f%u5236%u52a8&quot;,&quot;SIP_C_168&quot;:&quot;%u9f13%u5f0f&quot;,&quot;SIP_T_MODELID&quot;:4094,&quot;SIP_T_STA&quot;:1,&quot;SIP_C_335&quot;:&quot;6%u4e07&quot;,&quot;SIP_C_333&quot;:&quot;1600&quot;,&quot;SIP_C_334&quot;:&quot;2200&quot;,&quot;SIP_C_332&quot;:&quot;362&quot;,&quot;SIP_T_YEAR&quot;:2014,&quot;SIP_C_330&quot;:&quot;3800&quot;,&quot;SIP_C_139&quot;:&quot;4&quot;,&quot;SIP_C_138&quot;:&quot;%u6da1%u8f6e%u589e%u538b&quot;,&quot;SIP_C_137&quot;:&quot;2968&quot;,&quot;SIP_C_136&quot;:&quot;3%2e0&quot;,&quot;SIP_C_135&quot;:&quot;NGD3%2e0%2dC3HA&quot;,&quot;SIP_C_134&quot;:&quot;3%2e0T%20163%u9a6c%u529bL4&quot;,&quot;SIP_C_249&quot;:&quot;0&quot;,&quot;SIP_C_140&quot;:&quot;%u76f4%u5217&quot;,&quot;SIP_C_141&quot;:&quot;4&quot;,&quot;SIP_C_347&quot;:&quot;%u5364%u7d20&quot;,&quot;SIP_C_142&quot;:&quot;%u53cc%u9876%u7f6e&quot;,&quot;brandNameDomain&quot;:&quot;ak-2171&quot;,&quot;SIP_C_149&quot;:&quot;%u67f4%u6cb9&quot;,&quot;SIP_C_148&quot;:&quot;40%2e0&quot;,&quot;SIP_T_NAME&quot;:&quot;3%2e0T%20VIP%u7248&quot;,&quot;SIP_C_241&quot;:&quot;%u25cf&quot;&#125;</div></pre></td></tr></table></figure>
-<p>这种编码相信大家看着很熟悉，就像我们把包含中文的url地址复制粘贴下来的结果，那么我们该怎么对这种数据进行解码呢？</p>
-<p>使用这种方式：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="comment">#对str先进行unquote url解码，再进行eval unicode解码</span></div><div class="line"><span class="comment">#处理数据时只需要我们把key-value对中的value依次作为参数传给deUnicode即可</span></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">deUnicode</span><span class="params">(str)</span>:</span></div><div class="line">    <span class="keyword">try</span>:</div><div class="line">        ans = eval(<span class="string">'"%s"'</span> % unquote(str).replace(<span class="string">'%'</span>, <span class="string">'\\'</span>))</div><div class="line">        <span class="keyword">return</span> ans</div><div class="line">    <span class="keyword">except</span> SyntaxError <span class="keyword">as</span> e:</div><div class="line">        <span class="keyword">return</span> str</div></pre></td></tr></table></figure>
-<h3 id="5、requests通过post提交表单数据（一般用于模拟登录）"><a href="#5、requests通过post提交表单数据（一般用于模拟登录）" class="headerlink" title="5、requests通过post提交表单数据（一般用于模拟登录）"></a>5、requests通过post提交表单数据（一般用于模拟登录）</h3><p>requests的post实现依赖于维持一个session，也就是说在session存在期间，我们可以以登录的身份来获取其他需要登录后才能获取的页面源码。</p>
-<p>简单使用如下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line"></div><div class="line">url = <span class="string">''</span></div><div class="line">datas = urllib.parse.urlencode(&#123;</div><div class="line">   <span class="string">'data-key'</span> : <span class="string">'data-value'</span></div><div class="line">&#125;)</div><div class="line"></div><div class="line">headers = dict(&#123;</div><div class="line">    <span class="string">'header-key'</span> : <span class="string">'header-value'</span></div><div class="line">&#125;)</div><div class="line"></div><div class="line">session = requests.session()</div><div class="line">session.post(url, datas, headers=headers)</div><div class="line"></div><div class="line">res = session.get(other url).text</div></pre></td></tr></table></figure>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;p&gt;之前在&lt;a href=&quot;http://www.codeceo.com/article/python-spider-skills.html&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;码农网&lt;/a&gt;看过python的爬虫小技巧，但是我认为总结地不够全面，而
-    
-    </summary>
-    
-      <category term="coding" scheme="http://blog.yinwoods.work/categories/coding/"/>
-    
-    
-      <category term="python, 爬虫" scheme="http://blog.yinwoods.work/tags/python-%E7%88%AC%E8%99%AB/"/>
     
   </entry>
   
