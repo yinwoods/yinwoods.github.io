@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://blog.yinwoods.work/"/>
-  <updated>2018-06-04T12:22:07.417Z</updated>
+  <updated>2019-05-19T05:24:41.791Z</updated>
   <id>http://blog.yinwoods.work/</id>
   
   <author>
@@ -14,6 +14,193 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Go实现一个读写锁</title>
+    <link href="http://blog.yinwoods.work/2019/05/19/Go%E5%AE%9E%E7%8E%B0%E4%B8%80%E4%B8%AA%E8%AF%BB%E5%86%99%E9%94%81/"/>
+    <id>http://blog.yinwoods.work/2019/05/19/Go实现一个读写锁/</id>
+    <published>2019-05-19T05:16:00.000Z</published>
+    <updated>2019-05-19T05:24:41.791Z</updated>
+    
+    <content type="html"><![CDATA[<p>当处理并发时，锁是最常用的编程语言工具，对于大多数应用而言，仅在使用数据时加锁，使用后释放即可。然而，对于一些对性能要求比较高的并发实现，锁的使用方式需要作出对应的优化。例如锁的 <em>粒度</em> 经常用于确保线程在尽可能短的时间内独占。</p>
+<p>此外，使用锁时一个常用优化方法是使用 <em>读写锁</em> ，本文即探讨读写锁的原理并给出相关实现。所有的代码都可以通过 <a href="https://github.com/eliben/code-for-blog/tree/master/2019/rwlocks" target="_blank" rel="external">on GitHub</a>访问。同时，文章的结尾给出了性能测试相关的方法。</p>
+<p>本文的撰写目的是为了研究探讨读写锁，如果需要在代码中使用读写锁，Go语言本身已经内置了一个高性能的读写锁：<code>sync.RWMutex</code>。实际上，本文也将探索它的实现。</p>
+<p><img src="https://eli.thegreenplace.net/images/2019/rwlock.png" alt=""></p>
+<h2 id="读写锁产生的动因"><a href="#读写锁产生的动因" class="headerlink" title="读写锁产生的动因"></a>读写锁产生的动因</h2><p>读写锁产生的动因是为了在无线程写数据的情况下，多个线程能够并发地共享该数据。普通锁并不会区分读线程或者写线程，因此当多个线程需要读取数据时，每个线程都必须先要对该数据上锁，浪费了大量资源。</p>
+<p>读写锁相对于普通锁的单个 <em>lock</em> 方法，它有两个方法，一个用于读者、一个用于写者。只要写者没有持有锁，多个读者即可共享数据。</p>
+<h2 id="简单实现"><a href="#简单实现" class="headerlink" title="简单实现"></a>简单实现</h2><p>下面实现一个简单的读写锁，使用counter记录读者数量。本文接下来的所有读写锁实现都会实现该接口：<br><figure class="highlight go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">type</span> RWLocker <span class="keyword">interface</span> &#123;</div><div class="line">    RLock()    <span class="comment">// 读者获取锁</span></div><div class="line">    RUnlock()  <span class="comment">// 读者释放锁</span></div><div class="line">    WLock()    <span class="comment">// 写者获取锁</span></div><div class="line">    WUnlock()  <span class="comment">// 写者释放锁</span></div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>对应锁的结构为：<br><figure class="highlight go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">type</span> ReaderCountRWLock <span class="keyword">struct</span> &#123;</div><div class="line">    m           sync.Mutex</div><div class="line">    readerCount <span class="keyword">int</span></div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>counter用于记录持有锁的读者数量，读者获取锁、释放锁的逻辑比较简单：<br><figure class="highlight go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">func</span> <span class="params">(l *ReaderCountRWLock)</span> <span class="title">RLock</span><span class="params">()</span></span> &#123;</div><div class="line">    l.m.Lock()</div><div class="line">    l.readerCount++</div><div class="line">    l.m.Unlock()</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="params">(l *ReaderCountRWLock)</span> <span class="title">RUnlock</span><span class="params">()</span></span> &#123;</div><div class="line">    l.m.Lock()</div><div class="line">    l.readerCount--</div><div class="line">    l.m.Unlock()</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>写者获取锁与释放锁的实现则复杂一些，写者在获取锁时必须等待持有锁的读者全部释放锁，代码如下：<br><figure class="highlight go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">func</span> <span class="params">(l *ReaderCountRWLock)</span> <span class="title">WLock</span><span class="params">()</span></span> &#123;</div><div class="line">    <span class="keyword">for</span> &#123;</div><div class="line">        l.m.Lock()</div><div class="line">        <span class="keyword">if</span> l.readerCount &gt; <span class="number">0</span> &#123;</div><div class="line">            l.m.Unlock()</div><div class="line">        &#125; <span class="keyword">else</span> &#123;</div><div class="line">            <span class="keyword">break</span></div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>写者对mutex上锁，同时检查是否存在读者持有锁，如果存在，写者释放mutexx并再次尝试，这也叫 <em>自旋</em> 。如果没有持有锁的读者，WLock将会结束，同时不释放锁，从而读者将无法再持有锁，写者释放锁的逻辑则比较直观：<br><figure class="highlight go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">func</span> <span class="params">(l *ReaderCountRWLock)</span> <span class="title">WUnlock</span><span class="params">()</span></span> &#123;</div><div class="line">    l.m.Unlock()</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>这样的实现方法是我目前能够想到的最简单的方法，它的性能有待优化，例如：当读者持有锁时，写者获取锁的实现会持续自旋，不断的获取锁与释放锁这一过程对CPU的计算能力来说是一种额外的消耗。如果我们能够使写者更高效地等待，那读写锁的性能也将获得提升。</p>
+<h2 id="使用条件变量实现高效等待"><a href="#使用条件变量实现高效等待" class="headerlink" title="使用条件变量实现高效等待"></a>使用条件变量实现高效等待</h2><p>条件变量的模式是“获取mutex，检查，如果未准备好则释放mutex”，而这正是我们需要的。因此改进后的读写锁实现是：<br><figure class="highlight go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">type</span> ReaderCountCondRWLock <span class="keyword">struct</span> &#123;</div><div class="line">    readerCount <span class="keyword">int</span></div><div class="line">    c           *sync.Cond</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>如果你在好奇读写锁中的mutex在哪里，不用担心，Go中，<code>sync.Cond</code> 内嵌一个mutex，这个结构体需要一个构造函数：<br><figure class="highlight go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewReaderCountCondRWLock</span><span class="params">()</span> *<span class="title">ReaderCountCondRWLock</span></span> &#123;</div><div class="line">    <span class="keyword">return</span> &amp;ReaderCountCondRWLock&#123;<span class="number">0</span>, sync.NewCond(<span class="built_in">new</span>(sync.Mutex))&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>下面是读者获取锁、释放锁的相关实现：<br><figure class="highlight go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">func</span> <span class="params">(l *ReaderCountCondRWLock)</span> <span class="title">RLock</span><span class="params">()</span></span> &#123;</div><div class="line">    l.c.L.Lock()</div><div class="line">    l.readerCount++</div><div class="line">    l.c.L.Unlock()</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="params">(l *ReaderCountCondRWLock)</span> <span class="title">RUnlock</span><span class="params">()</span></span> &#123;</div><div class="line">    l.c.L.Lock()</div><div class="line">    l.readerCount--</div><div class="line">    <span class="keyword">if</span> l.readerCount == <span class="number">0</span> &#123;</div><div class="line">        l.c.Signal()</div><div class="line">    &#125;</div><div class="line">    l.c.L.Unlock()</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>与上一版读写锁实现的区别仅在于这里在最后一个读者释放锁的时候会在条件变量上发出信号。写者获取锁的实现方式为：<br><figure class="highlight go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">func</span> <span class="params">(l *ReaderCountCondRWLock)</span> <span class="title">WLock</span><span class="params">()</span></span> &#123;</div><div class="line">    l.c.L.Lock()</div><div class="line">    <span class="keyword">for</span> l.readerCount &gt; <span class="number">0</span> &#123;</div><div class="line">        l.c.Wait()</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>这里的Wait过程仍然处于循环中，因为极有可能在读者发出信号之后、写者获取锁之前，另一个读者先拿到锁。</p>
+<p>写者释放锁的过程：<br><figure class="highlight go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">func</span> <span class="params">(l *ReaderCountCondRWLock)</span> <span class="title">WUnlock</span><span class="params">()</span></span> &#123;</div><div class="line">    l.c.Signal()</div><div class="line">    l.c.L.Unlock()</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>你能理解Signal为什么是需要的吗？缺少它，在特定情况下将会导致死锁：如果两个写者都在等待条件变量，在其中一个获取锁后，另一个将会继续等待，在缺少后续读者发送信号的情况下，这个写者将会永久等待，因此有必要在写着释放锁的时候发出信号。</p>
+<p>这一实现比上一版的视线更为高效，因为避免了自旋的过程，尽管这里仍然又一个循环，但它会在Wait执行时阻塞，仅当竞争时才会再次执行循环。</p>
+<p>需要注意的是，这里提到的“更高效”并没有相应的数据支撑，因为对上述代码执行性能测试过于复杂，且性能会随着测试样例的变化而变化。后文将会针对性能测试给出说明。</p>
+<h2 id="Counted-信号量"><a href="#Counted-信号量" class="headerlink" title="Counted 信号量"></a>Counted 信号量</h2><p>另一种实现读写锁的优雅方式时通过 <em>counting 信号量</em> 实现。在Go中，<code>golang.org/x/sync/semaphore</code>包提供了相关的实现。构造方法与读者获取锁、释放锁的实现如下：<br><figure class="highlight go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">const</span> maxWeight <span class="keyword">int64</span> = <span class="number">1</span> &lt;&lt; <span class="number">30</span></div><div class="line"></div><div class="line"><span class="keyword">type</span> SemaRWLock <span class="keyword">struct</span> &#123;</div><div class="line">    s *semaphore.Weighted</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="comment">// NewSemaRWLock creates a new SemaRWLock.</span></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewSemaRWLock</span><span class="params">()</span> *<span class="title">SemaRWLock</span></span> &#123;</div><div class="line">    <span class="keyword">return</span> &amp;SemaRWLock&#123;semaphore.NewWeighted(maxWeight)&#125;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="params">(l *SemaRWLock)</span> <span class="title">RLock</span><span class="params">()</span></span> &#123;</div><div class="line">    l.s.Acquire(context.Background(), <span class="number">1</span>)</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="params">(l *SemaRWLock)</span> <span class="title">RUnlock</span><span class="params">()</span></span> &#123;</div><div class="line">    l.s.Release(<span class="number">1</span>)</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>写者仅仅是获取整个maxWeight, 从而保证仅有一个写锁能够获取信号量。<br><figure class="highlight go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">func</span> <span class="params">(l *SemaRWLock)</span> <span class="title">WLock</span><span class="params">()</span></span> &#123;</div><div class="line">    l.s.Acquire(context.Background(), maxWeight)</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="params">(l *SemaRWLock)</span> <span class="title">WUnlock</span><span class="params">()</span></span> &#123;</div><div class="line">    l.s.Release(maxWeight)</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>这种实现方式非常简洁，在实际测试时，可能是因为 semaphore.Weighted 不适合特定的测试样例，这个方法的性能甚至还没有第一版实现的性能好。</p>
+<h2 id="读者优先-vs-写者优先"><a href="#读者优先-vs-写者优先" class="headerlink" title="读者优先 vs. 写者优先"></a>读者优先 vs. 写者优先</h2><p>上述的三种实现都存在一个问题：当读者数量很大时，可能会导致写者饥饿。例如，第一版实现中 readerCount 为0时，写者才能够获取锁，假设有两个活跃的读者以及一个等待的写者，在写者等待一个读者释放锁的过程中，另一个读者可能又会获取锁</p>
+<p>这也被叫做 <em>读者优先</em>, 或者 <em>写者饥饿</em> 。下面我们将实现写者优先的相关逻辑。</p>
+<h2 id="简单的写者优先读写锁"><a href="#简单的写者优先读写锁" class="headerlink" title="简单的写者优先读写锁"></a>简单的写者优先读写锁</h2><p>实现源于 <a href="https://en.wikipedia.org/wiki/Readers%E2%80%93writer_lock" target="_blank" rel="external">Wikipedia</a>。首先，数据结构与构造函数如下：<br><figure class="highlight go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">type</span> WritePreferRWLock <span class="keyword">struct</span> &#123;</div><div class="line">    readerCount <span class="keyword">int</span></div><div class="line">    hasWriter   <span class="keyword">bool</span></div><div class="line">    c           *sync.Cond</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewWritePreferRWLock</span><span class="params">()</span> *<span class="title">WritePreferRWLock</span></span> &#123;</div><div class="line">    <span class="keyword">return</span> &amp;WritePreferRWLock&#123;<span class="number">0</span>, <span class="literal">false</span>, sync.NewCond(<span class="built_in">new</span>(sync.Mutex))&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>这里的 readerCount 仍然指代持有锁的读者数量, 但我们添加了一个新的字段 - hasWriter; 当有写者等待获取锁的时候，它的值为true。读者获取锁与释放锁的逻辑如下：<br><figure class="highlight go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">func</span> <span class="params">(l *WritePreferRWLock)</span> <span class="title">RLock</span><span class="params">()</span></span> &#123;</div><div class="line">    l.c.L.Lock()</div><div class="line">    <span class="keyword">for</span> l.hasWriter &#123;</div><div class="line">        l.c.Wait()</div><div class="line">    &#125;</div><div class="line">    l.readerCount++</div><div class="line">    l.c.L.Unlock()</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="params">(l *WritePreferRWLock)</span> <span class="title">RUnlock</span><span class="params">()</span></span> &#123;</div><div class="line">    l.c.L.Lock()</div><div class="line">    l.readerCount--</div><div class="line">    <span class="keyword">if</span> l.readerCount == <span class="number">0</span> &#123;</div><div class="line">        l.c.Signal()</div><div class="line">    &#125;</div><div class="line">    l.c.L.Unlock()</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>当读者尝试获取锁时，会首先检查是否有写者等待获取锁，如果有的话将会让出获取锁的权限，保证写者先获取锁。</p>
+<p>在缩放锁的时候，最后一个读者会发出信号，触发在等待的线程执行。</p>
+<p>写者获取锁、释放锁的相关实现：<br><figure class="highlight go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">func</span> <span class="params">(l *WritePreferRWLock)</span> <span class="title">WLock</span><span class="params">()</span></span> &#123;</div><div class="line">    l.c.L.Lock()</div><div class="line">    <span class="keyword">for</span> l.hasWriter &#123;</div><div class="line">        l.c.Wait()</div><div class="line">    &#125;</div><div class="line">    l.hasWriter = <span class="literal">true</span></div><div class="line">    <span class="keyword">for</span> l.readerCount &gt; <span class="number">0</span> &#123;</div><div class="line">        l.c.Wait()</div><div class="line">    &#125;</div><div class="line">    l.c.L.Unlock()</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="params">(l *WritePreferRWLock)</span> <span class="title">WUnlock</span><span class="params">()</span></span> &#123;</div><div class="line">    l.c.L.Lock()</div><div class="line">    l.hasWriter = <span class="literal">false</span></div><div class="line">    l.c.Broadcast()</div><div class="line">    l.c.L.Unlock()</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>写者将会首先检查是否有其他写者在等待，不同于之前的实现，这里写者在WLock与WUnlock之间不再持有mutex，取而代之，mutex仅用于控制共享结构的访问，hasWriter 字段不仅表示有写者在等待锁，也表示写者正在使用锁，当hashWriter为true时，不再有新的读者能够获取到锁。</p>
+<p>在 WUnlock 中, 写者将 hasWriter 置为 false，同时广播信号。这里使用Broadcast而不是Signal是因为可能存在多个读者等待，而我们期望唤醒所有等待的读者。</p>
+<h2 id="更高效的写者优先读写锁实现"><a href="#更高效的写者优先读写锁实现" class="headerlink" title="更高效的写者优先读写锁实现"></a>更高效的写者优先读写锁实现</h2><p>上述的实现都比较简洁，但性能表现却不够好。因此，这里我们研究下Go自身读写锁的实现。</p>
+<p>实现的总体目标是使读者能够尽快获取锁，同时要保证写优先。</p>
+<p>首先是结构体与构造方法的实现：<br><figure class="highlight go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">type</span> WritePreferFastRWLock <span class="keyword">struct</span> &#123;</div><div class="line">    w sync.Mutex</div><div class="line">    writerWait <span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125;</div><div class="line">    readerWait <span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125;</div><div class="line">    numPending <span class="keyword">int32</span>         <span class="comment">// 尝试持有锁或已经持有锁的读者数量 </span></div><div class="line">    readersDeparting <span class="keyword">int32</span>   <span class="comment">// 在写者持有锁之前获取锁的读者数量（读者释放锁，也会随之减1）</span></div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="keyword">const</span> maxReaders <span class="keyword">int32</span> = <span class="number">1</span> &lt;&lt; <span class="number">30</span></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewWritePreferFastRWLock</span><span class="params">()</span> *<span class="title">WritePreferFastRWLock</span></span> &#123;</div><div class="line">    <span class="keyword">var</span> l WritePreferFastRWLock</div><div class="line">    l.writerWait = <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125;)</div><div class="line">    l.readerWait = <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125;)</div><div class="line">    <span class="keyword">return</span> &amp;l</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>mutex w不会被读者所使用，它存在的作用是为写者提供互斥，稍后再介绍它的具体用法。numPending用于表示有多少个读者持有锁（类似上文中的readerCount），但它同时也被写者使用。写者将该字段减去maxReaders，如果得到一个负数就表明一个写者正在使用锁，通过原子操作访问该字段，因此不再需要锁。<br>下面介绍读者相关方法的实现：<br><figure class="highlight go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">func</span> <span class="params">(l *WritePreferFastRWLock)</span> <span class="title">RLock</span><span class="params">()</span></span> &#123;</div><div class="line">    <span class="keyword">if</span> atomic.AddInt32(&amp;l.numPending, <span class="number">1</span>) &lt; <span class="number">0</span> &#123;</div><div class="line">        &lt;-l.readerWait</div><div class="line">    &#125;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="params">(l *WritePreferFastRWLock)</span> <span class="title">RUnlock</span><span class="params">()</span></span> &#123;</div><div class="line">    <span class="keyword">if</span> r := atomic.AddInt32(&amp;l.numPending, <span class="number">-1</span>); r &lt; <span class="number">0</span> &#123;</div><div class="line">        <span class="keyword">if</span> atomic.AddInt32(&amp;l.readersDeparting, <span class="number">-1</span>) == <span class="number">0</span> &#123;</div><div class="line">            l.writerWait &lt;- <span class="keyword">struct</span>&#123;&#125;&#123;&#125;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>读者获取锁时会对numPending加1，如果numPending是非负数，表明没有写者等待持有锁或正持有锁，因此读者可以继续操作。读者获取锁的方法执行极其频繁，而这里只是用了一个原子操作、一个条件判断，因此速度极快。</p>
+<p>如果numPending是负数，表明写者正在等待获取锁或已经获取锁，因此读者将会让出权限，保持等待，这个操作是通过在一个无缓冲channel上等待实现的。</p>
+<p>当读者释放锁时，它将numPending减1，如果没有写者等待，执行结束；如果有写者等待，readersDeparting字段用于告知写者一个读者已经释放锁。</p>
+<p>写者获取锁：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">func</span> <span class="params">(l *WritePreferFastRWLock)</span> <span class="title">WLock</span><span class="params">()</span></span> &#123;</div><div class="line">    l.w.Lock()</div><div class="line">    r := atomic.AddInt32(&amp;l.numPending, -maxReaders) + maxReaders</div><div class="line">    <span class="keyword">if</span> r != <span class="number">0</span> &amp;&amp; atomic.AddInt32(&amp;l.readersDeparting, r) != <span class="number">0</span> &#123;</div><div class="line">        &lt;-l.writerWait</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>w mutex用于保证仅有一个写者在任意时间内获取锁。第二行复杂一些，它完成两件事：</p>
+<ol>
+<li><p>通过执行numPending减maxReaders告知读者存在一个写者等待</p>
+</li>
+<li><p>通过执行加maxReaders操作，获取有多少个尝试持有锁或持有锁的读者</p>
+</li>
+</ol>
+<p>接下来，如果有任意数量尝试持有锁或持有锁的读者(r != 0)，它将对应数值加入readersDeparting中，——这让读者在解除写者等待前知道有多少个尝试持有锁或持有锁的读者，当最后一个持有锁的读者释放时，函数将返回（写者持有锁），其他写者因为w而陷入等待，而读者则等待numPending变为非负数才能获取锁。</p>
+<p>写者释放锁：<br><figure class="highlight go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">func</span> <span class="params">(l *WritePreferFastRWLock)</span> <span class="title">WUnlock</span><span class="params">()</span></span> &#123;</div><div class="line">    r := atomic.AddInt32(&amp;l.numPending, maxReaders)</div><div class="line">    <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="keyword">int</span>(r); i++ &#123;</div><div class="line">        l.readerWait &lt;- <span class="keyword">struct</span>&#123;&#125;&#123;&#125;</div><div class="line">    &#125;</div><div class="line">    l.w.Unlock()</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>再一次，通过加maxReaders，写者能够告诉未来的读者已经没有写者还处于等待获取锁的过程中了。r表示等待获取锁的读者数量，写者通过发送r个空对象到readerWait中唤醒所有等待的读者，最后对w解锁，给予后续写者上锁的机会。</p>
+<p>这里主要是readersDeparting不太好理解，为了更好的理解它，假设有如下操作：</p>
+<ol>
+<li>两个读者获取锁（numPending = 2，readersDeparting = 0）</li>
+<li>一个写者获取锁(numPending = 2 - MAX, readersDeparting = 2)</li>
+<li>一个读者获取锁（numPending = 3 - MAX, readersDeparting = 2）</li>
+</ol>
+<p>可见，readersDeparting主要用于记录写者上锁前就已经持有锁的读者数量，后续这些这些读者释放锁时，readersDeparting也会随之减少，当它变为0时，恰好说明写者之前获取锁的所有读者均已经释放锁。</p>
+<h2 id="后续-性能测试方法"><a href="#后续-性能测试方法" class="headerlink" title="后续: 性能测试方法"></a>后续: 性能测试方法</h2><p>性能测试相关方法的代码位于<a href="https://github.com/eliben/code-for-blog/blob/master/2019/rwlocks/rwlock_test.go" target="_blank" rel="external">GitHub</a>。它的目的是测试正确性，因此它检查多个读者与写者执行的正确性。在执行性能测试时，会记录每个读者与写者获取锁的等待时间，最后打印平均时间。</p>
+<h2 id="原文链接"><a href="#原文链接" class="headerlink" title="原文链接"></a>原文链接</h2><p><a href="https://eli.thegreenplace.net/2019/implementing-reader-writer-locks/" target="_blank" rel="external">Implementing reader-writer locks</a></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;当处理并发时，锁是最常用的编程语言工具，对于大多数应用而言，仅在使用数据时加锁，使用后释放即可。然而，对于一些对性能要求比较高的并发实现，锁的使用方式需要作出对应的优化。例如锁的 &lt;em&gt;粒度&lt;/em&gt; 经常用于确保线程在尽可能短的时间内独占。&lt;/p&gt;
+&lt;p&gt;此外，使用锁时
+    
+    </summary>
+    
+      <category term="coding" scheme="http://blog.yinwoods.work/categories/coding/"/>
+    
+    
+      <category term="Go 读写锁" scheme="http://blog.yinwoods.work/tags/Go-%E8%AF%BB%E5%86%99%E9%94%81/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Java中的变型</title>
+    <link href="http://blog.yinwoods.work/2019/04/28/Java%E4%B8%AD%E7%9A%84%E5%8F%98%E5%9E%8B/"/>
+    <id>http://blog.yinwoods.work/2019/04/28/Java中的变型/</id>
+    <published>2019-04-28T03:48:00.000Z</published>
+    <updated>2019-05-19T05:17:38.324Z</updated>
+    
+    <content type="html"><![CDATA[<h2 id="什么是变型"><a href="#什么是变型" class="headerlink" title="什么是变型?"></a>什么是变型?</h2><p>维基百科上<a href="https://zh.wikipedia.org/wiki/%E5%8D%8F%E5%8F%98%E4%B8%8E%E9%80%86%E5%8F%98" target="_blank" rel="external">变型</a>的定义:</p>
+<blockquote>
+<p><strong>变型</strong>是在计算机科学中，描述具有父/子型别关系的多个型别通过型别构造器、构造出的多个复杂型别之间是否有父/子型别关系的用语。</p>
+</blockquote>
+<p>许多<a href="https://zh.wikipedia.org/wiki/%E7%A8%8B%E5%BC%8F%E8%A8%AD%E8%A8%88%E8%AA%9E%E8%A8%80" title="程序设计语言" target="_blank" rel="external">程序设计语言</a>的<a href="https://zh.wikipedia.org/wiki/%E5%9E%8B%E5%88%A5%E7%B3%BB%E7%B5%B1" title="类型系统" target="_blank" rel="external">类型系统</a>支持<a href="https://zh.wikipedia.org/wiki/%E5%AD%90%E5%9E%8B%E5%88%A5" title="子类型" target="_blank" rel="external">子类型</a>。例如，如果<code>Cat</code>是<code>Animal</code>的子类型，那么<code>Cat</code>类型的表达式可用于任何出现<code>Animal</code>类型表达式的地方。所谓的<strong>变型</strong>（variance）是指如何根据组成类型之间的子类型关系，来确定更复杂的类型之间（例如<code>Cat</code>列表之于<code>Animal</code>列表，返回值为<code>Cat</code>的函数之于返回值为<code>Animal</code>的函数…等等）的子类型关系。当我们用类型构造出更复杂的类型，原本类型的子类型性质可能被保持、反转、或忽略───取决于<a href="https://zh.wikipedia.org/wiki/%E5%9E%8B%E5%88%A5%E6%A7%8B%E9%80%A0%E5%99%A8" title="类型构造器" target="_blank" rel="external">类型构造器</a>的变型性质。例如在<a href="https://zh.wikipedia.org/wiki/C%E2%99%AF" title="C♯" target="_blank" rel="external">C#</a>中：</p>
+<ul>
+<li><p><code>IEnumerable&lt;Cat&gt;</code>是<code>IEnumerable&lt;Animal&gt;</code>的子类型，因为类型构造器<code>IEnumerable&lt;T&gt;</code>是协变的（covariant）。注意到复杂类型<code>IEnumerable</code>的子类型关系和其接口中的参数类型是一致的，亦即，参数类型之间的子类型关系被保持住了。</p>
+</li>
+<li><p><code>Action&lt;Cat&gt;</code>是<code>Action&lt;Animal&gt;</code>的超类型，因为类型构造器<code>Action&lt;T&gt;</code>是逆变的（contravariant）。（在此，<code>Action&lt;T&gt;</code>被用来表示一个参数类型为<code>T</code>或<code>sub-T</code>的<a href="https://zh.wikipedia.org/wiki/%E4%B8%80%E7%B4%9A%E5%87%BD%E6%95%B8" title="一级函数" target="_blank" rel="external">一级函数</a>）。注意到<code>T</code>的子类型关系在复杂类型<code>Action</code>的封装下是反转的，但是当它被视为函数的参数时其子类型关系是被保持的。</p>
+</li>
+<li><p><code>IList&lt;Cat&gt;</code>或<code>IList&lt;Animal&gt;</code>彼此之间没有子类型关系。因为<code>IList&lt;T&gt;</code>类型构造器是不变的（invariant），所以参数类型之间的子类型关系被忽略了。</p>
+</li>
+</ul>
+<p>“复杂型别” 指的是如容器、函数之类的高级数据结构，因此变型描述的是通过继承关联的容器、函数的赋值兼容性。例如，我们能够将一个返回值为cat列表的方法返回值赋值到animal列表吗？我们能够将Audi列表作为接收cars列表方法的参数吗？</p>
+<h2 id="四种变型"><a href="#四种变型" class="headerlink" title="四种变型"></a>四种变型</h2><p>在一门程序设计语言的<a href="https://zh.wikipedia.org/wiki/%E5%9E%8B%E5%88%A5%E7%B3%BB%E7%B5%B1" title="类型系统" target="_blank" rel="external">类型系统</a>中，一个类型规则或者类型构造器是：</p>
+<ul>
+<li><strong>协变</strong>（covariant），如果它保持了<a href="https://zh.wikipedia.org/wiki/%E5%AD%90%E5%9E%8B%E5%88%A5" title="子类型" target="_blank" rel="external">子类型序关系≦</a>。该序关系是：子类型≦基类型。</li>
+<li><strong>逆变</strong>（contravariant），如果它逆转了子类型序关系。</li>
+<li><strong>不变</strong>（invariant），如果上述两种均不适用。</li>
+</ul>
+<h2 id="数组"><a href="#数组" class="headerlink" title="数组"></a>数组</h2><p>首先考虑数组类型构造器： 从<code>Animal</code>类型，可以得到<code>Animal[]</code>（“animal数组”）。 是否可以把它当作</p>
+<ul>
+<li>协变：一个<code>Cat[]</code>也是一个<code>Animal[]</code></li>
+<li>逆变：一个<code>Animal[]</code>也是一个<code>Cat[]</code></li>
+<li>以上二者均不是（不变）？</li>
+</ul>
+<p>如果要避免类型错误，且数组支持对其元素的读、写操作，那么只有第3个选择是安全的。<code>Animal[]</code>并不是总能当作<code>Cat[]</code>，因为当一个客户读取数组并期望得到一个<code>Cat</code>，但<code>Animal[]</code>中包含的可能是个<code>Dog</code>。所以逆变规则是不安全的。</p>
+<p>反之，一个<code>Cat[]</code>也不能被当作一个<code>Animal[]</code>。因为总是可以把一个<code>Dog</code>放到<code>Animal[]</code>中。在协变数组，这就不能保证是安全的，因为背后的存储可以实际是<code>Cat[]</code>。因此协变规则也不是安全的—数组构造器应该是<strong>不变</strong>。注意，这仅是可写（mutable）数组的问题；对于不可写（只读）数组，协变规则是安全的。</p>
+<p>这示例了一般现像。只读数据类型是协变的；只写数据类型是逆变的。可读可写类型应是“不变”的。</p>
+<p>Java中泛型是不变的，可有时需要实现逆变与协变，怎么办呢？这时，通配符?派上了用场：</p>
+<p><code>&lt;? extends&gt;</code>实现了泛型的协变，比如：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">List&lt;? extends Number&gt; list = <span class="keyword">new</span> ArrayList&lt;Integer&gt;();</div></pre></td></tr></table></figure></p>
+<p><code>&lt;? super&gt;</code>实现了泛型的逆变，比如：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">List&lt;? <span class="keyword">super</span> Number&gt; list = <span class="keyword">new</span> ArrayList&lt;Object&gt;();</div></pre></td></tr></table></figure></p>
+<p>extends确定了泛型的上界，而super确定了泛型的下界。</p>
+<h3 id="Java中的协变"><a href="#Java中的协变" class="headerlink" title="Java中的协变"></a>Java中的协变</h3><blockquote>
+<p>如果 <code>B</code> 是 <code>A</code> 的子类型, 那么 <code>GenericType&lt;B&gt;</code> 是 <code>GenericType&lt;? extends A&gt;</code> 的子类型.</p>
+</blockquote>
+<p>早期版本的Java不包含<a href="https://zh.wikipedia.org/wiki/%E6%B3%9B%E5%9E%8B" title="泛型" target="_blank" rel="external">泛型</a>（generics，即参数化多态）。在这样的设置下，使数组为“不变”将导致许多有用的多态程序被排除。</p>
+<p>例如，考虑一个用于重排（shuffle）数组的函数，或者测试两个数组相等的函数，使用<code>Object</code>与<code>equals</code>方法. 函数的实现并不依赖于数组元素的确切类型，因此可以写一个单独的实现而适用于所有的数组：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">boolean</span> <span class="title">equalArrays</span> <span class="params">(Object[] a1, Object[] a2)</span></span>;</div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">shuffleArray</span><span class="params">(Object[] a)</span></span>;</div></pre></td></tr></table></figure></p>
+<p>然而，如果数组类型被处理为“不变”，那么它仅能用于确切为<code>Object[]</code>类型的数组。对于字符串数组等就不能做重排操作了。</p>
+<p>所以，Java把数组类型处理为协变。在Java中，<code>String[]</code>是<code>Object[]</code>的子类型。</p>
+<p>如前文所述，协变数组在写入数组的操作时会出问题。Java为此把每个数组对像在创建时附标一个类型。 每当向数组存入一个值，编译器插入一段代码来检查该值的运行时类型是否等于数组的运行时类型。如果不匹配，会抛出一个<code>ArrayStoreException</code>：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// a 是单元素的 String 数组</span></div><div class="line">String[] a = <span class="keyword">new</span> String[<span class="number">1</span>];</div><div class="line"></div><div class="line"><span class="comment">// b 是 Object 的数组</span></div><div class="line">Object[] b = a;</div><div class="line"></div><div class="line"><span class="comment">// 向 b 中赋一个整数。如果 b 确实是 Object 的数组，这是可能的；然而它其实是个 String 的数组，因此会发生 java.lang.ArrayStoreException</span></div><div class="line">b[<span class="number">0</span>] = <span class="number">1</span>;</div></pre></td></tr></table></figure></p>
+<p>在上例中，可以从b中安全地读。仅在写入数组时可能会遇到麻烦。</p>
+<p>这个方法的缺点是留下了运行时错误的可能，而一个更严格的<a href="https://zh.wikipedia.org/wiki/%E5%9E%8B%E5%88%A5%E7%B3%BB%E7%B5%B1" title="类型系统" target="_blank" rel="external">类型系统</a>本可以在编译时识别出该错误。这个方法还有损性能，因为在运行时要运行额外的类型检查。</p>
+<p>Java有了泛型后，有了类型安全的编写这种多态函数。数组比较与重排可以给定参数类型<br><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">&lt;T&gt; <span class="function"><span class="keyword">boolean</span> <span class="title">equalArrays</span> <span class="params">(T[] a1, T[] a2)</span></span>;</div><div class="line">&lt;T&gt; <span class="function"><span class="keyword">void</span> <span class="title">shuffleArray</span><span class="params">(T[] a)</span></span>;</div></pre></td></tr></table></figure></p>
+<h3 id="协变容器"><a href="#协变容器" class="headerlink" title="协变容器"></a>协变容器</h3><p>Java允许子类型（协变）泛型类型，但它会严格限制可以“流入和流出“的泛型类型。换句话说，具有类型参数的返回值的方法是可访问的，而具有类型参数的输入参数的方法是不可访问的。</p>
+<p>您可以为子类型赋值超类型：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// Type hierarchy: Person :&gt; Joe :&gt; JoeJr</span></div><div class="line">List&lt;? extends Joe&gt; joes = <span class="keyword">new</span> ArrayList&lt;Joe&gt;(); <span class="comment">// OK，没问题👌</span></div><div class="line">List&lt;? extends Joe&gt; joes = <span class="keyword">new</span> ArrayList&lt;JoeJr&gt;(); <span class="comment">// OK，没问题👌</span></div><div class="line">List&lt;? extends Joe&gt; joes = <span class="keyword">new</span> ArrayList&lt;Person&gt;(); <span class="comment">// COMPILE ERROR</span></div></pre></td></tr></table></figure>
+<p>也可从协变容器中 <em>读出</em> 超类型:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// Type hierarchy: Person :&gt; Joe :&gt; JoeJr</span></div><div class="line">List&lt;? extends Joe&gt; joes = <span class="keyword">new</span> ArrayList&lt;&gt;();</div><div class="line">Joe j = joes.get(<span class="number">0</span>); <span class="comment">// OK，没问题👌</span></div><div class="line">Person p = joes.get(<span class="number">0</span>); <span class="comment">// OK，没问题👌</span></div><div class="line">JoeJr jr = joes.get(<span class="number">0</span>); <span class="comment">// compile error (you don't know what subtype of Joe is in the list)</span></div></pre></td></tr></table></figure></p>
+<p>但向协变容器 <em>写入</em> 超类型是禁止的。在下例的代码中, 如果其他方法向 <code>List&lt;? extends Person&gt;</code> 参数中加入 <code>Jill</code>，<code>List&lt;Joe&gt;</code> 的调用房将会 <em>混乱</em> 。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// Type hierarchy: Person &gt; Joe &gt; JoeJr</span></div><div class="line">List&lt;? extends Joe&gt; joes = <span class="keyword">new</span> ArrayList&lt;&gt;();</div><div class="line">joes.add(<span class="keyword">new</span> Joe());  <span class="comment">// compile error (无法知道joes接受Joe的什么子类型)</span></div><div class="line">joes.add(<span class="keyword">new</span> JoeJr()); <span class="comment">// compile error (ditto)</span></div><div class="line">joes.add(<span class="keyword">new</span> Person()); <span class="comment">// compile error (intuitive)</span></div><div class="line">joes.add(<span class="keyword">new</span> Object()); <span class="comment">// compile error (intuitive)</span></div></pre></td></tr></table></figure></p>
+<h2 id="Java中的不变"><a href="#Java中的不变" class="headerlink" title="Java中的不变"></a>Java中的不变</h2><blockquote>
+<p>如果 <code>A</code> 是 <code>B</code> 的超类型, 那么 <code>GenericType&lt;A&gt;</code> <strong>不是</strong> <code>GenericType&lt;B&gt;</code> 的超类型，以及反之亦然。</p>
+</blockquote>
+<p>也就是说两种类型互不关联，且在任何条件下都不能互换。</p>
+<h3 id="不变容器"><a href="#不变容器" class="headerlink" title="不变容器"></a>不变容器</h3><p>在Java中，不变量可能是您将遇到的泛型的第一个例子，并且是最直观的。类型参数的方法可以像人们期望的那样使用。可以访问类型参数的所有方法。</p>
+<p>他们无法交换：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// Type hierarchy: Person :&gt; Joe :&gt; JoeJr</span></div><div class="line">List&lt;Person&gt; p = <span class="keyword">new</span> ArrayList&lt;Joe&gt;(); <span class="comment">// COMPILE ERROR (a bit counterintuitive, but remember List&lt;Person&gt; is invariant)</span></div><div class="line">List&lt;Joe&gt; j = <span class="keyword">new</span> ArrayList&lt;Person&gt;(); <span class="comment">// COMPILE ERROR</span></div></pre></td></tr></table></figure></p>
+<p>但可以向容器中添加对应对象：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// Type hierarchy: Person :&gt; Joe :&gt; JoeJr</span></div><div class="line">List&lt;Person&gt; p = <span class="keyword">new</span> ArrayList&lt;&gt;();</div><div class="line">p.add(<span class="keyword">new</span> Person()); <span class="comment">// OK</span></div><div class="line">p.add(<span class="keyword">new</span> Joe()); <span class="comment">// OK</span></div><div class="line">p.add(<span class="keyword">new</span> JoeJr()); <span class="comment">// OK</span></div></pre></td></tr></table></figure></p>
+<p>也可以从容器中读取对象：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// Type hierarchy: Person :&gt; Joe :&gt; JoeJr</span></div><div class="line">List&lt;Joe&gt; joes = <span class="keyword">new</span> ArrayList&lt;&gt;();</div><div class="line">Joe j = joes.get(<span class="number">0</span>); <span class="comment">// OK</span></div><div class="line">Person p = joes.get(<span class="number">0</span>); <span class="comment">// OK</span></div></pre></td></tr></table></figure></p>
+<h2 id="Java中的逆变"><a href="#Java中的逆变" class="headerlink" title="Java中的逆变"></a>Java中的逆变</h2><blockquote>
+<p>如果 <code>A</code> 是 <code>B</code> 的超类型, 那么 <code>GenericType&lt;A&gt;</code> 是 <code>GenericType&lt;? super B&gt;</code> 的超类型。</p>
+</blockquote>
+<h3 id="逆变容器"><a href="#逆变容器" class="headerlink" title="逆变容器"></a>逆变容器</h3><p>逆变容器表现同协变容器相反，也就是说，可以具有类型参数的输入参数的方法是可访问的，而具有类型参数的返回值的方法是不可访问的。</p>
+<p>可以为超类型赋值子类型：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// Type hierarchy: Person &gt; Joe &gt; JoeJr</span></div><div class="line">List&lt;? <span class="keyword">super</span> Joe&gt; joes = <span class="keyword">new</span> ArrayList&lt;Joe&gt;();  <span class="comment">// OK</span></div><div class="line">List&lt;? <span class="keyword">super</span> Joe&gt; joes = <span class="keyword">new</span> ArrayList&lt;Person&gt;(); <span class="comment">// OK</span></div><div class="line">List&lt;? <span class="keyword">super</span> Joe&gt; joes = <span class="keyword">new</span> ArrayList&lt;JoeJr&gt;(); <span class="comment">// COMPILE ERROR</span></div></pre></td></tr></table></figure></p>
+<p>但不能从容器中读出特定类型<br><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// Type hierarchy: Person &gt; Joe &gt; JoeJr</span></div><div class="line">List&lt;? <span class="keyword">super</span> Joe&gt; joes = <span class="keyword">new</span> ArrayList&lt;&gt;();</div><div class="line">Joe j = joes.get(<span class="number">0</span>); <span class="comment">// compile error (0位置的元素可以是Object或Person)</span></div><div class="line">Person p = joes.get(<span class="number">0</span>); <span class="comment">// compile error (ditto)</span></div><div class="line">Object o = joes.get(<span class="number">0</span>); <span class="comment">// 能够执行，因为Java中一切皆对象</span></div></pre></td></tr></table></figure></p>
+<p>可以向其添加直接子类型：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// Type hierarchy: Person &gt; Joe &gt; JoeJr</span></div><div class="line">List&lt;? <span class="keyword">super</span> Joe&gt; joes = <span class="keyword">new</span> ArrayList&lt;&gt;();</div><div class="line">joes.add(<span class="keyword">new</span> JoeJr()); <span class="comment">// allowed</span></div></pre></td></tr></table></figure></p>
+<p>但不能向其添加超类型：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// Type hierarchy: Person &gt; Joe &gt; JoeJr</span></div><div class="line">List&lt;? <span class="keyword">super</span> Joe&gt; joes = <span class="keyword">new</span> ArrayList&lt;&gt;();</div><div class="line">joes.add(<span class="keyword">new</span> Person()); <span class="comment">// compile error (again, could be a list of Object or Person or Joe)</span></div><div class="line">joes.add(<span class="keyword">new</span> Object()); <span class="comment">// compile error (ditto)</span></div></pre></td></tr></table></figure></p>
+<h2 id="具有-N-Type-参数结构的协变"><a href="#具有-N-Type-参数结构的协变" class="headerlink" title="具有 N-Type 参数结构的协变"></a>具有 N-Type 参数结构的协变</h2><p>对于如Functions这种更复杂的类型，规则同样适用，只是需要考虑多个参数规则:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// Type hierarchy: Person &gt; Joe &gt; JoeJr</span></div><div class="line"></div><div class="line"><span class="comment">// 不变</span></div><div class="line">Function&lt;Person, Joe&gt; personToJoe = <span class="keyword">null</span>;</div><div class="line">Function&lt;Joe, JoeJr&gt; joeToJoeJr = <span class="keyword">null</span>;</div><div class="line">personToJoe = joeToJoeJr; <span class="comment">// COMPILE ERROR (personToJoe 是不变的)</span></div><div class="line"></div><div class="line"><span class="comment">// 协变</span></div><div class="line">Function&lt;? extends Person, ? extends Joe&gt; personToJoe = <span class="keyword">null</span>; <span class="comment">// 协变</span></div><div class="line">Function&lt;Joe, JoeJr&gt; joeToJoeJr = <span class="keyword">null</span>;</div><div class="line">personToJoe = joeToJoeJr;  <span class="comment">// OK</span></div><div class="line"></div><div class="line"><span class="comment">// 逆变</span></div><div class="line">Function&lt;? <span class="keyword">super</span> Joe, ? <span class="keyword">super</span> JoeJr&gt; joeToJoeJr = <span class="keyword">null</span>; <span class="comment">// 逆变</span></div><div class="line">Function&lt;? <span class="keyword">super</span> Person, ? <span class="keyword">super</span> Joe&gt; personToJoe = <span class="keyword">null</span>;</div><div class="line">joeToJoeJr = personToJoe; <span class="comment">// OK</span></div></pre></td></tr></table></figure></p>
+<h2 id="协变与继承"><a href="#协变与继承" class="headerlink" title="协变与继承"></a>协变与继承</h2><p>Java允许使用协变返回类型和异常类型重载方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">interface</span> <span class="title">Person</span> </span>&#123;</div><div class="line">  <span class="function">Person <span class="title">get</span><span class="params">()</span></span>;</div><div class="line">  <span class="function"><span class="keyword">void</span> <span class="title">fail</span><span class="params">()</span> <span class="keyword">throws</span> Exception</span>;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="class"><span class="keyword">interface</span> <span class="title">Joe</span> <span class="keyword">extends</span> <span class="title">Person</span> </span>&#123;</div><div class="line">  <span class="function">JoeJr <span class="title">get</span><span class="params">()</span></span>;</div><div class="line">  <span class="function"><span class="keyword">void</span> <span class="title">fail</span><span class="params">()</span> <span class="keyword">throws</span> IOException</span>;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">JoeImpl</span> <span class="keyword">implements</span> <span class="title">Joe</span> </span>&#123;</div><div class="line">  <span class="function"><span class="keyword">public</span> JoeJr <span class="title">get</span><span class="params">()</span> </span>&#123;&#125; <span class="comment">// 重载</span></div><div class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">fail</span><span class="params">()</span> <span class="keyword">throws</span> IOException </span>&#123;&#125; <span class="comment">// 重载</span></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>但是尝试使用协变参数重载方法只会导致重写：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">interface</span> <span class="title">Person</span> </span>&#123;</div><div class="line">  <span class="function"><span class="keyword">void</span> <span class="title">add</span><span class="params">(Person p)</span></span>;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="class"><span class="keyword">interface</span> <span class="title">Joe</span> <span class="keyword">extends</span> <span class="title">Person</span> </span>&#123;</div><div class="line">  <span class="function"><span class="keyword">void</span> <span class="title">add</span><span class="params">(Joe j)</span></span>;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">JoeImpl</span> <span class="keyword">implements</span> <span class="title">Joe</span> </span>&#123;</div><div class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">add</span><span class="params">(Person p)</span> </span>&#123;&#125;  <span class="comment">// overloaded</span></div><div class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">add</span><span class="params">(Joe j)</span> </span>&#123;&#125; <span class="comment">// overloaded</span></div><div class="line"> &#125;</div></pre></td></tr></table></figure></p>
+<h2 id="Final-Thoughts"><a href="#Final-Thoughts" class="headerlink" title="Final Thoughts"></a>Final Thoughts</h2><p>协变为J​​ava带来了额外的复杂性。虽然协变的规则很容易理解，但关于类型参数方法的可访问性的规则是违反直觉的。理解它们需要暂停手头的工作，额外思考。</p>
+<p>但是，我的日常经验是，细微差别通常不会受到影响：</p>
+<ul>
+<li>我不记得一个我必须声明逆变的实例，我很少遇到它们（虽然它们确实存在）。</li>
+<li>协变论证似乎更常见，但同时它们也更容易推理。</li>
+</ul>
+<p><strong>总结:</strong> 协变在日常编程中提供了适度的便利，特别是当需要与子类型的兼容性时（这在OOP中经常出现）。使用协变、逆变时主要参考PECS（Producer Extends Consumer Super）原则：</p>
+<ul>
+<li>频繁往外读取内容的，适合用上界Extends（协变）。</li>
+<li>经常往里插入的，适合用下界Super（逆变）。</li>
+</ul>
+<h2 id="原文链接"><a href="#原文链接" class="headerlink" title="原文链接"></a>原文链接</h2><p><a href="https://llorllale.github.io/java-variance/#fn:2" target="_blank" rel="external">java-variance</a><br><a href="https://zh.wikipedia.org/wiki/%E5%8D%8F%E5%8F%98%E4%B8%8E%E9%80%86%E5%8F%98" target="_blank" rel="external">协变与逆变</a></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;什么是变型&quot;&gt;&lt;a href=&quot;#什么是变型&quot; class=&quot;headerlink&quot; title=&quot;什么是变型?&quot;&gt;&lt;/a&gt;什么是变型?&lt;/h2&gt;&lt;p&gt;维基百科上&lt;a href=&quot;https://zh.wikipedia.org/wiki/%E5%8D%8F%E5
+    
+    </summary>
+    
+      <category term="coding" scheme="http://blog.yinwoods.work/categories/coding/"/>
+    
+    
+      <category term="Java 变型" scheme="http://blog.yinwoods.work/tags/Java-%E5%8F%98%E5%9E%8B/"/>
+    
+  </entry>
   
   <entry>
     <title>k8s基本组件及执行流程</title>
@@ -822,48 +1009,6 @@
   </entry>
   
   <entry>
-    <title>首尾指针法</title>
-    <link href="http://blog.yinwoods.work/2016/10/16/%E9%A6%96%E5%B0%BE%E6%8C%87%E9%92%88%E6%B3%95/"/>
-    <id>http://blog.yinwoods.work/2016/10/16/首尾指针法/</id>
-    <published>2016-10-15T16:00:00.000Z</published>
-    <updated>2017-07-26T10:06:54.000Z</updated>
-    
-    <content type="html"><![CDATA[<p>首尾指针法多应用于在已排序的数组中实现O(N)的查找。</p>
-<p>例如：给定一个整数k，对于两个递增数组，找到(i, j)使得 a 中的 i 位置与 b 中的 j 位置满足 a[i] + b[j] = k。<br>对于这种问题，我们往往可以取 a 中的第i位及 b 中第j位，依次相加并根据相加结果与数值 k 的大小来决定i, j的移动方向。</p>
-<p>具体代码如下：</p>
-<pre><code>#!CPP
-while (i &lt; a.size()) {
-    while(a[i] + b[j] &gt; X &amp;&amp; j &gt; 0) j--;
-    if (a[i] + b[j] == X) writeAnswer(i, j);
-    i++;
-}
-</code></pre><p>问题变形：</p>
-<p>1、对于无重复元素的数组 a，问存在多少种三个数相加，和为定值k的情况。</p>
-<blockquote>
-<p>解答：先对数组排序，外部循环遍历a，并在循环内部找a[p] + a[q] = k - a[i]的情况。其中 p,q 的寻找即利用首尾指针法。</p>
-</blockquote>
-<p>2、对于无重复元素的数组 a，问存在多少种两个数相减，和为定值k的情况。</p>
-<blockquote>
-<p>解答：先对数组排序，外部循环遍历a，判断a[i] + k是否在数组a中即可，判断可以利用set来实现log(N)的时间复杂度，因此该算法的时间复杂度为O(NlogN)。</p>
-<p>解答： 更高效的方法是取i = 0, j = 1, 当 a[j] - a[i] &gt; k 时，++i；当a[j] - a[i] &lt; k时，++j;</p>
-</blockquote>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;p&gt;首尾指针法多应用于在已排序的数组中实现O(N)的查找。&lt;/p&gt;
-&lt;p&gt;例如：给定一个整数k，对于两个递增数组，找到(i, j)使得 a 中的 i 位置与 b 中的 j 位置满足 a[i] + b[j] = k。&lt;br&gt;对于这种问题，我们往往可以取 a 中的第i位及 b 中第
-    
-    </summary>
-    
-      <category term="coding" scheme="http://blog.yinwoods.work/categories/coding/"/>
-    
-    
-      <category term="algorithm" scheme="http://blog.yinwoods.work/tags/algorithm/"/>
-    
-  </entry>
-  
-  <entry>
     <title>后缀数组(suffix Array)学习</title>
     <link href="http://blog.yinwoods.work/2016/10/16/%E5%90%8E%E7%BC%80%E6%95%B0%E7%BB%84%E5%AD%A6%E4%B9%A0/"/>
     <id>http://blog.yinwoods.work/2016/10/16/后缀数组学习/</id>
@@ -912,6 +1057,48 @@ while (i &lt; a.size()) {
     
     
       <category term="algorithm, data structure" scheme="http://blog.yinwoods.work/tags/algorithm-data-structure/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>首尾指针法</title>
+    <link href="http://blog.yinwoods.work/2016/10/16/%E9%A6%96%E5%B0%BE%E6%8C%87%E9%92%88%E6%B3%95/"/>
+    <id>http://blog.yinwoods.work/2016/10/16/首尾指针法/</id>
+    <published>2016-10-15T16:00:00.000Z</published>
+    <updated>2017-07-26T10:06:54.000Z</updated>
+    
+    <content type="html"><![CDATA[<p>首尾指针法多应用于在已排序的数组中实现O(N)的查找。</p>
+<p>例如：给定一个整数k，对于两个递增数组，找到(i, j)使得 a 中的 i 位置与 b 中的 j 位置满足 a[i] + b[j] = k。<br>对于这种问题，我们往往可以取 a 中的第i位及 b 中第j位，依次相加并根据相加结果与数值 k 的大小来决定i, j的移动方向。</p>
+<p>具体代码如下：</p>
+<pre><code>#!CPP
+while (i &lt; a.size()) {
+    while(a[i] + b[j] &gt; X &amp;&amp; j &gt; 0) j--;
+    if (a[i] + b[j] == X) writeAnswer(i, j);
+    i++;
+}
+</code></pre><p>问题变形：</p>
+<p>1、对于无重复元素的数组 a，问存在多少种三个数相加，和为定值k的情况。</p>
+<blockquote>
+<p>解答：先对数组排序，外部循环遍历a，并在循环内部找a[p] + a[q] = k - a[i]的情况。其中 p,q 的寻找即利用首尾指针法。</p>
+</blockquote>
+<p>2、对于无重复元素的数组 a，问存在多少种两个数相减，和为定值k的情况。</p>
+<blockquote>
+<p>解答：先对数组排序，外部循环遍历a，判断a[i] + k是否在数组a中即可，判断可以利用set来实现log(N)的时间复杂度，因此该算法的时间复杂度为O(NlogN)。</p>
+<p>解答： 更高效的方法是取i = 0, j = 1, 当 a[j] - a[i] &gt; k 时，++i；当a[j] - a[i] &lt; k时，++j;</p>
+</blockquote>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;首尾指针法多应用于在已排序的数组中实现O(N)的查找。&lt;/p&gt;
+&lt;p&gt;例如：给定一个整数k，对于两个递增数组，找到(i, j)使得 a 中的 i 位置与 b 中的 j 位置满足 a[i] + b[j] = k。&lt;br&gt;对于这种问题，我们往往可以取 a 中的第i位及 b 中第
+    
+    </summary>
+    
+      <category term="coding" scheme="http://blog.yinwoods.work/categories/coding/"/>
+    
+    
+      <category term="algorithm" scheme="http://blog.yinwoods.work/tags/algorithm/"/>
     
   </entry>
   
@@ -1065,83 +1252,6 @@ while (i &lt; a.size()) {
     
     
       <category term="python, 爬虫" scheme="http://blog.yinwoods.work/tags/python-%E7%88%AC%E8%99%AB/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>一点感想</title>
-    <link href="http://blog.yinwoods.work/2016/07/21/%E4%B8%80%E7%82%B9%E6%84%9F%E6%83%B3/"/>
-    <id>http://blog.yinwoods.work/2016/07/21/一点感想/</id>
-    <published>2016-07-20T16:00:00.000Z</published>
-    <updated>2017-07-26T10:06:54.000Z</updated>
-    
-    <content type="html"><![CDATA[<p>大学结束都快一个月了，期间也不是没想过写点什么，可又总觉得提笔忘字。其实大学四年对我来说不仅仅是四年的光阴，更多的是期间的经历给我带来的蜕变，如果说大学前我是个孩子，那大学后的我已经变成一名青年了。有时候也会问自己，这样的话少年的我又去了哪里了呢？</p>
-<p>回想起四年的生活，脑海中的画面总是定格在那个夜晚上自习刚结束，独自一人走在回寝室路上的时刻，那个时候的自己是多么充实快乐啊。如果说四年来学会了什么以后能够在社会上安身立命的技能的话，我的答案不会是编程，而是独处。编程归根到底来说只是一项普通的技能，是大多数人通过合理训练能够习得的技能，而独处则不然，它很大程度上依赖于外界环境的“压迫”。可能因为自己性子里的因素吧，对待生活赐予的“压迫”，我接受地很好，以至于现在很多时候能够享受独处，而也正是由于独处时的思考，帮助我理清了自己未来对待生活的想法。可以说我对自己想要的生活以及想要变成的模样，在这个独处的过程中变得愈发清晰。</p>
-<p>最近在读余秋雨的《行者无疆》，书中讲述了作者在欧洲旅游的一些观察和感悟，虽然才读了四分之一，可已然感概良多。也正是在读这本书的过程中，我又多次思考了自己憧憬向往的未来生活。记得初中学过论语的“一箪食，一瓢饮，在陋巷。人不堪其忧，回也不改其乐”，当初的自己怎么也不能理解在这种物质极度匮乏的情况下如何能乐呢？然而现在自己慢慢地能够理解了，开心快乐本就源自内心，一个人内心强大又何需用外界物质来换取内心的愉悦呢？之前思考总是走上一条弯路：安贫乐道是一种高尚的情怀。现在则不这么看了，安贫乐道值得钦佩，更值得赞扬的应该是即使大富大贵仍能够不改其乐。</p>
-<p>由此也引出了我对未来生活的一点小思考，我清楚地认知到未来我的幸福快乐不在于我拿起了多少东西，财富？权利？荣誉？都不是！在于我能够放下多少东西，生命的前半段要扛起路上的包裹，而后半程也需要放下。我所追求的生活应当是熵减的，既然清楚地意识到自己的目标，那么通往目标的路上我只需要避开对我来说过于复杂的人和事就已经成功一大半了（事实上一直以来我也确实是这么做的）。</p>
-<p>对于未来，我想和一群简单的朋友生活在一个简单的圈子里。而这里的简单很大程度上取决于自己的选择。😀</p>
-<p>——写于2016年7月20日夜 大雨</p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;p&gt;大学结束都快一个月了，期间也不是没想过写点什么，可又总觉得提笔忘字。其实大学四年对我来说不仅仅是四年的光阴，更多的是期间的经历给我带来的蜕变，如果说大学前我是个孩子，那大学后的我已经变成一名青年了。有时候也会问自己，这样的话少年的我又去了哪里了呢？&lt;/p&gt;
-&lt;p&gt;回想起四年
-    
-    </summary>
-    
-      <category term="diary" scheme="http://blog.yinwoods.work/categories/diary/"/>
-    
-    
-      <category term="thoughts" scheme="http://blog.yinwoods.work/tags/thoughts/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>python中的协程</title>
-    <link href="http://blog.yinwoods.work/2016/07/07/python%E4%B8%AD%E7%9A%84%E5%8D%8F%E7%A8%8B/"/>
-    <id>http://blog.yinwoods.work/2016/07/07/python中的协程/</id>
-    <published>2016-07-06T16:00:00.000Z</published>
-    <updated>2017-07-26T10:06:54.000Z</updated>
-    
-    <content type="html"><![CDATA[<p>要了解协程，首先要对子例程有所认知。</p>
-<p>子例程可以类比于程序中的函数调用，调用过程是后入先出的栈式调用；</p>
-<blockquote>
-<p>协程可以通过yield来调用其它协程。通过yield方式转移执行权的协程之间不是调用者与被调用者的关系，而是彼此对称、平等的。 <a href="https://zh.wikipedia.org/wiki/%E5%8D%8F%E7%A8%8B" target="_blank" rel="external">协程-维基百科</a></p>
-</blockquote>
-<p>通过下面的伪代码可以更好地理解协程：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">var q := new queue</div><div class="line"></div><div class="line">生产者协程</div><div class="line"></div><div class="line">   loop</div><div class="line">       <span class="keyword">while</span> q <span class="keyword">is</span> <span class="keyword">not</span> full</div><div class="line">           create some new items</div><div class="line">           add the items to q</div><div class="line">       <span class="keyword">yield</span> to consume</div><div class="line">消费者协程</div><div class="line"></div><div class="line">   loop</div><div class="line">       <span class="keyword">while</span> q <span class="keyword">is</span> <span class="keyword">not</span> empty</div><div class="line">           remove some items <span class="keyword">from</span> q</div><div class="line">           use the items</div><div class="line">       <span class="keyword">yield</span> to produce</div></pre></td></tr></table></figure>
-<p>在python中由于 <em>全局解释器锁（GIL）</em> 的原因导致多线程难以发挥多核并行计算能力，因为GIL的原因，同一时刻只能有一个线程运行，更多情况下我们选用multiprocessing来实现多进程从而提高执行效率。而对于协程则更擅长处理I/O密集的程序。</p>
-<p>具体到python中协程，是以yield为基础实现的。</p>
-<h4 id="首先了解一下python中的yield"><a href="#首先了解一下python中的yield" class="headerlink" title="首先了解一下python中的yield:"></a>首先了解一下python中的yield:</h4><p>可以通过stackoverflow上的一个帖子来了解python中的<a href="http://stackoverflow.com/questions/231767/what-does-the-yield-keyword-do-in-python" target="_blank" rel="external">yield用法</a>，简单地来说就是包含yield语句的函数被称为生成器函数，它与普通函数的区别就在于普通函数每次都要从函数入口处重新执行，而生成器函数仅第一次从入口处执行，之后都会从yield语句之后的地方开始执行。</p>
-<p>这么看好像很复杂，下面我们通过一个例子来认识yield。</p>
-<p>比如现在你想要写一个生成前n个斐波那契数，你可能很容易想到类似下面的这种写法：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">fib</span><span class="params">(n)</span>:</span></div><div class="line">    index = <span class="number">0</span></div><div class="line">    a = <span class="number">0</span></div><div class="line">    b = <span class="number">1</span></div><div class="line">    res = []</div><div class="line">    <span class="keyword">while</span> index &lt; n:</div><div class="line">        index += <span class="number">1</span></div><div class="line">        a, b = b, a+b</div><div class="line">        res.append(a)</div><div class="line">    <span class="keyword">return</span> res</div></pre></td></tr></table></figure>
-<p>可是当n非常大时，上面这个程序把所有结果都保存在res中是很耗内存的，这时候就引出了yield。如果使用yield重写的话，函数是这样的：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">fib</span><span class="params">(n)</span>:</span></div><div class="line">    index = <span class="number">0</span></div><div class="line">    a = <span class="number">0</span></div><div class="line">    b = <span class="number">1</span></div><div class="line">    <span class="keyword">while</span> index &lt; n:</div><div class="line">        index += <span class="number">1</span></div><div class="line">        a, b = b, a+b</div><div class="line">        <span class="keyword">yield</span> a</div><div class="line">        </div><div class="line"><span class="keyword">for</span> i <span class="keyword">in</span> fib(<span class="number">20</span>):</div><div class="line">    print(i)</div></pre></td></tr></table></figure>
-<p>这里的fib因为包含了yield语句所以是生成器函数，当运行fib函数时，每次只取当前运算到的数，可以理解为每次运行到yield语句时，fib函数暂停，当下一次运行时，又会从暂停的位置继续运行。</p>
-<p>那么讲到这里，这和协程有什么关系呢？</p>
-<p><strong>很容易想到如果能够从yield语句进入另一个函数并获取其返回值，不就是协程的实现吗？</strong></p>
-<p>这里引入了send的用法，send的作用即是把另一个函数的返回值传递给当前函数（PS：这里说函数返回值是为了帮助理解，其实就是再次进入函数时能够获取外界传递进来的参数），示例代码如下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">stupid_fib</span><span class="params">(n)</span>:</span></div><div class="line">    index = <span class="number">0</span></div><div class="line">    a = <span class="number">0</span></div><div class="line">    b = <span class="number">1</span></div><div class="line">    <span class="keyword">while</span> index &lt; n:</div><div class="line">        </div><div class="line">        index += <span class="number">1</span></div><div class="line">        a, b = b, a+b</div><div class="line">        <span class="comment">#sleep_cnt 获取外界send的值</span></div><div class="line">        sleep_cnt = <span class="keyword">yield</span> a</div><div class="line">        </div><div class="line">        print(<span class="string">'let me think &#123;&#125; secs'</span>.format(sleep_cnt))</div><div class="line">        time.sleep(sleep_cnt)</div><div class="line"></div><div class="line">sfib = stupid_fib(<span class="number">20</span>)</div><div class="line">fib_res = next(sfib)</div><div class="line"><span class="keyword">while</span> <span class="keyword">True</span>:</div><div class="line">    print(fib_res)</div><div class="line">    <span class="keyword">try</span>:</div><div class="line">        fib_res = sfib.send(random.uniform(<span class="number">0</span>, <span class="number">0.5</span>))</div><div class="line">    <span class="keyword">except</span> StopIteration:</div><div class="line">        <span class="keyword">break</span></div></pre></td></tr></table></figure>
-<p>目前为止，通过 yield 与 send 就实现了类似协程的机制。</p>
-<p>要进一步了解协程可以深入地学习一下asyncio.coroutine和yield from以及python3.5中引入的新机制async和await。</p>
-<p>另外本篇博文主要参考：<a href="http://blog.guoyb.com/2016/07/03/python-coroutine/" target="_blank" rel="external">Python协程：从yield/send到async/await</a></p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;p&gt;要了解协程，首先要对子例程有所认知。&lt;/p&gt;
-&lt;p&gt;子例程可以类比于程序中的函数调用，调用过程是后入先出的栈式调用；&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;协程可以通过yield来调用其它协程。通过yield方式转移执行权的协程之间不是调用者与被调用者的关系，而是彼此对称
-    
-    </summary>
-    
-      <category term="coding" scheme="http://blog.yinwoods.work/categories/coding/"/>
-    
-    
-      <category term="python, 网络" scheme="http://blog.yinwoods.work/tags/python-%E7%BD%91%E7%BB%9C/"/>
     
   </entry>
   
